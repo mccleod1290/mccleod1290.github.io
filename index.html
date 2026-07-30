@@ -3,16 +3,420 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>mccleod1290 writeups</title>
+<meta name="description" content="K. Madhura Nadh (mccleod1290) — security writeups, CTF notes, and authorized challenge reports." />
+<title>K. Madhura Nadh · mccleod1290</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
-  a { color: #0969da; }
+  :root {
+    --bg: #0b0f14;
+    --bg-elev: #121820;
+    --bg-card: #151c27;
+    --border: #243041;
+    --text: #e8eef6;
+    --muted: #8b9bb0;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59, 130, 246, 0.12);
+    --accent-border: rgba(59, 130, 246, 0.35);
+    --good: #34d399;
+    --glow: rgba(59, 130, 246, 0.18);
+    --radius: 16px;
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(59, 130, 246, 0.16), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(52, 211, 153, 0.08), transparent 50%),
+      var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .wrap {
+    width: min(980px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 4rem;
+  }
+
+  /* top nav */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 3.5rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(18, 24, 32, 0.72);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(145deg, #2563eb, #1d4ed8 55%, #0ea5e9);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .nav-links a {
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-weight: 500;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .nav-links a:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  /* hero */
+  .hero {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: fit-content;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-soft);
+    color: #93c5fd;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15);
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+    font-weight: 700;
+  }
+  h1 span {
+    background: linear-gradient(90deg, #60a5fa, #34d399 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lede {
+    max-width: 38rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.08rem;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.35rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--muted);
+    font-size: 0.86rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  .chip strong { color: var(--text); font-weight: 500; }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.15rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary {
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    color: white;
+    box-shadow: 0 10px 28px var(--glow);
+  }
+  .btn-primary:hover { box-shadow: 0 14px 34px rgba(59, 130, 246, 0.3); }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.03); }
+
+  /* sections */
+  section { margin-top: 2.75rem; }
+  .section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+  .section-head p {
+    margin: 0.2rem 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+  }
+  .card {
+    grid-column: span 12;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.3rem 1.35rem;
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  @media (min-width: 720px) {
+    .card.half { grid-column: span 6; }
+  }
+  .card:hover {
+    border-color: rgba(59, 130, 246, 0.45);
+    transform: translateY(-2px);
+  }
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+  .tag {
+    display: inline-flex;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(52, 211, 153, 0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(52, 211, 153, 0.25);
+  }
+  .tag.blue {
+    background: var(--accent-soft);
+    color: #93c5fd;
+    border-color: var(--accent-border);
+  }
+  .date {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  .card h3 {
+    margin: 0 0 0.45rem;
+    font-size: 1.12rem;
+    letter-spacing: -0.02em;
+  }
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .card .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .mini {
+    font-size: 0.78rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.22rem 0.55rem;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .about {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    padding: 1.35rem 1.4rem;
+  }
+  .about p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .about p + p { margin-top: 0.75rem; }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  footer a { color: #93c5fd; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    nav { border-radius: 18px; padding: 0.75rem; }
+    .brand span.hide-sm { display: none; }
+  }
 </style>
 </head>
 <body>
-  <h1>Writeups</h1>
-  <ul>
-    <li><a href="writeup-intigriti-july.html">Intigriti July 2026 — dual package JSON authz bypass</a></li>
-  </ul>
+  <div class="wrap">
+    <nav aria-label="Primary">
+      <div class="brand">
+        <div class="avatar" aria-hidden="true">MN</div>
+        <span>K. Madhura Nadh <span class="hide-sm" style="color:var(--muted);font-weight:500">· mccleod1290</span></span>
+      </div>
+      <div class="nav-links">
+        <a href="#writeups">Writeups</a>
+        <a href="#about">About</a>
+        <a href="https://github.com/mccleod1290" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="pill"><span class="dot" aria-hidden="true"></span> Security research notes</div>
+      <h1>K. Madhura <span>Nadh</span></h1>
+      <p class="lede">
+        Writeups from authorized CTFs and challenge work. First-principles notes on
+        web authz bugs, parse quirks, and end-to-end reproduction steps.
+      </p>
+      <div class="meta-row">
+        <span class="chip"><strong>@</strong> mccleod1290</span>
+        <span class="chip">mccleod1290.github.io</span>
+        <span class="chip">focus · web / authz</span>
+      </div>
+      <div class="actions">
+        <a class="btn btn-primary" href="writeup-intigriti-july.html">Read latest writeup</a>
+        <a class="btn btn-ghost" href="https://github.com/mccleod1290/writeups" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+      </div>
+    </header>
+
+    <section id="writeups">
+      <div class="section-head">
+        <div>
+          <h2>Writeups</h2>
+          <p>Public, authorized challenge reports only.</p>
+        </div>
+      </div>
+      <div class="grid">
+        <a class="card" href="writeup-intigriti-july.html">
+          <div class="card-top">
+            <span class="tag">Intigriti · 0726</span>
+            <span class="date">2026-07-30</span>
+          </div>
+          <h3>Dual package JSON authorization bypass</h3>
+          <p>
+            Registry Observatory split authz and action across duplicate top-level
+            <code style="font-family:JetBrains Mono,monospace;color:#c7d2fe">package</code>
+            keys. First object passed ownership checks; last object selected the
+            protected <code style="font-family:JetBrains Mono,monospace;color:#c7d2fe">@core/security-notes</code>
+            report that held the flag.
+          </p>
+          <div class="foot">
+            <span class="mini">authz bypass</span>
+            <span class="mini">JSON duplicate keys</span>
+            <span class="mini">Chrome / API</span>
+            <span class="mini">screenshots</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="section-head">
+        <div>
+          <h2>About</h2>
+          <p>How this site is used.</p>
+        </div>
+      </div>
+      <div class="about">
+        <p>
+          This is a personal GitHub Pages site for publishing technical writeups.
+          Content is limited to systems and challenges I am authorized to test.
+        </p>
+        <p>
+          Prefer the long-form HTML posts for screenshots and full reproduction
+          steps. Source mirrors may also live under
+          <a href="https://github.com/mccleod1290/writeups" style="color:#93c5fd">github.com/mccleod1290/writeups</a>.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      <span>© <span id="y"></span> K. Madhura Nadh</span>
+      <span>
+        <a href="https://github.com/mccleod1290/mccleod1290.github.io">Site source</a>
+        ·
+        <a href="writeup-intigriti-july.html">Latest writeup</a>
+      </span>
+    </footer>
+  </div>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
