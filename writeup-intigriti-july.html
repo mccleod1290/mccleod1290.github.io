@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Intigriti 0726 from first principles: dual package JSON and authz split</title>
+<style>
+  :root {
+    --bg: #0b111b;
+    --panel: #121a27;
+    --text: #e6eef7;
+    --muted: #9fb0c3;
+    --accent: #ef3257;
+    --good: #5ddea8;
+    --code: #1a2433;
+    --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1, h2, h3 { line-height: 1.25; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  p, li { color: var(--text); }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 28px 22px;
+    margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block;
+    background: rgba(239,50,87,0.15);
+    color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4);
+    border-radius: 999px;
+    padding: 0.2em 0.75em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .flag {
+    background: #0e1f18;
+    border: 1px solid rgba(93,222,168,0.45);
+    color: var(--good);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 0.95rem;
+    margin: 1rem 0 1.5rem;
+  }
+  pre, code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+  code { color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+  }
+  figure img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+  }
+  figcaption {
+    color: var(--muted);
+    font-size: 0.88rem;
+    padding: 8px 6px 2px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.92rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--panel); color: #cfe0f5; }
+  .callout {
+    background: var(--panel);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 10px 10px 0;
+    margin: 1.2rem 0;
+  }
+  .good-callout { border-left-color: var(--good); }
+  ol.tight li, ul.tight li { margin-bottom: 0.5em; }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  a { color: #7eb6ff; }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 1.5rem 0 2rem;
+  }
+  .toc ol { margin: 0.4em 0 0; padding-left: 1.3em; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  @media print {
+    body { background: #fff; color: #111; font-size: 11pt; }
+    .wrap { max-width: none; padding: 12px; }
+    .hero, .callout, figure, pre, th, .toc { background: #f6f7f9 !important; color: #111 !important; }
+    .flag { color: #0a5; }
+    a { color: #06c; }
+    h2 { page-break-after: avoid; }
+    figure { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">Intigriti Monthly Challenge · 0726</span>
+  <h1>From blank page to flag: how a dual <code>package</code> JSON document bypasses authorization</h1>
+  <p class="muted">
+    First-principles writeup of Intigriti’s July 2026 challenge
+    (<a href="https://challenge-0726.intigriti.io/">challenge-0726.intigriti.io</a>).
+    This walks the full path: what the app is, what the server promises, which
+    experiments failed, and why one carefully ordered JSON document returns the
+    protected report that holds the flag.
+  </p>
+  <div class="meta">
+    <span>App: Canonically Yours / Registry Observatory</span>
+    <span>Bug class: JSON duplicate key / authz vs action split</span>
+    <span>Date: 2026-07-30</span>
+  </div>
+</div>
+
+<div class="flag"><strong>Flag:</strong> INTIGRITI{019f8700-4613-74fb-923e-781903e4bee9}</div>
+
+<nav class="toc" aria-label="Table of contents">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#s0">What “done” means for this contest</a></li>
+    <li><a href="#s1">Mental model of the app</a></li>
+    <li><a href="#s2">Session, CSRF, and API surface</a></li>
+    <li><a href="#s3">Finding the crown jewel</a></li>
+    <li><a href="#s4">What the client hard-codes (and why that is not security)</a></li>
+    <li><a href="#s5">Negative tests that map the real boundary</a></li>
+    <li><a href="#s6">JSON on the wire: ordered text vs abstract maps</a></li>
+    <li><a href="#s7">The bug: first package for authz, last for the report</a></li>
+    <li><a href="#s8">Full exploit path you can replay</a></li>
+    <li><a href="#s9">Why this is not “only last-wins JSON”</a></li>
+    <li><a href="#s10">Impact, fixes, and submission package</a></li>
+  </ol>
+</nav>
+
+<h2 id="s0">0. What “done” means for this contest</h2>
+<p>
+  The landing page sets the rules: solution in latest Chrome, not self-XSS, not
+  MitM, and a flag of the form <code>INTIGRITI{...}</code>. The app itself says
+  the important part out loud: <em>“A protected report contains the flag.”</em>
+</p>
+<p>
+  That line steers the whole investigation. If the flag lives inside a report
+  that normal users should not be able to order, then spraying XSS into React
+  text nodes is the wrong main bet. The productive question is:
+  <strong>how do I get the server to build and return a report for a package I
+  am not allowed to target?</strong>
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/01-landing.jpg" alt="Challenge landing page with rules and embedded app" />
+  <figcaption>Figure 1. Landing page: rules, flag format, and the app embedded in an iframe.</figcaption>
+</figure>
+
+<h2 id="s1">1. Mental model of the app</h2>
+<p>
+  Registry Observatory is a small Vite + React SPA at
+  <code>/challenge.html</code>. It pretends to be a private package registry
+  with a preflight workflow. In plain terms, a logged-in user can ask:
+  “Does this package exist, what is its latest version, and what are the release
+  notes?” The answer comes back as a read-only publication report.
+</p>
+<p>The product flow is linear:</p>
+<ol class="tight">
+  <li>Register or log in. You get a private <strong>namespace</strong> (scope) and a CSRF token.</li>
+  <li>Fill a JSON <strong>manifest</strong> that names a package triple: scope, name, version.</li>
+  <li>Base64-encode that JSON into <code>manifest_b64</code>.</li>
+  <li><strong>Preview</strong> the manifest (schema and ownership checks).</li>
+  <li><strong>Sign</strong> it. The server returns a short-lived approval blob
+      (id, hash, nonce, expiry, signature).</li>
+  <li><strong>Publish</strong> by replaying <code>manifest_b64</code> plus the approval fields.</li>
+  <li>Read the report: existence, version, compatibility text, release notes.</li>
+</ol>
+
+<figure>
+  <img src="writeup-intigriti-july/images/02-workspace.jpg" alt="Authenticated workspace with packages and recent reports" />
+  <figcaption>
+    Figure 2. Authenticated workspace for namespace <code>@hax44265-d098d1e1</code>.
+    Seeded packages include <code>hello-world</code>, <code>compat-sample</code>, and
+    <code>legacy-adapter</code>. After the exploit, recent reports also show
+    <code>@core/security-notes</code> as ready.
+  </figcaption>
+</figure>
+
+<p>
+  UI tabs matter for recon, not for the bug itself:
+  Overview (workspace), Observatory archive (lore and hints), Manifest Studio
+  (the happy-path form), and Publication history (every report you ordered).
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/04-studio.jpg" alt="Manifest Studio form with scope locked to user namespace" />
+  <figcaption>
+    Figure 3. Manifest Studio. Scope is a read-only field bound to your namespace.
+    Package name, version, and description are editable. Buttons: preview, request
+    approval, run preflight.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="writeup-intigriti-july/images/04b-preview-ok.jpg" alt="Manifest Studio after successful validation" />
+  <figcaption>
+    Figure 4. After a normal preview of your own package, the UI shows
+    “Manifest validation completed.” That only proves the happy path works.
+  </figcaption>
+</figure>
+
+<h2 id="s2">2. Session, CSRF, and API surface</h2>
+<p>
+  Unauthenticated recon already shows a thin, explicit API under
+  <code>/api/*</code>. Nothing fancy: register, login, me, packages, manifests,
+  publications, health. Session is a cookie named <code>cy_session</code>
+  (HttpOnly, SameSite=Strict). Mutations need header
+  <code>x-csrf-token</code> taken from <code>GET /api/me</code>.
+</p>
+<p>
+  That design is standard and solid for cookie sessions. CSRF is not the bug.
+  Cookie flags are not the bug. The bug lives one layer deeper: how the server
+  interprets the JSON inside <code>manifest_b64</code>.
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/10-pipeline.jpg" alt="Table of the seven-step publish pipeline" />
+  <figcaption>Figure 5. The seven-step publish pipeline from login to report body.</figcaption>
+</figure>
+
+<h2 id="s3">3. Finding the crown jewel</h2>
+<p>
+  The app does not hide the target package. The Observatory archive and
+  component index name it directly.
+</p>
+<ul class="tight">
+  <li>Platform-maintained scope: <code>core</code></li>
+  <li>Restricted component: <code>security-notes</code> (record CR-17, version 1.0.0)</li>
+  <li>Copy text: transfer into platform-maintained namespace; restricted maintenance component</li>
+</ul>
+
+<figure>
+  <img src="writeup-intigriti-july/images/03-observatory.jpg" alt="Observatory archive transfer notices" />
+  <figcaption>
+    Figure 6. Observatory archive. CR-17 transfer notice says the record moved into
+    platform-maintained scope <code>core</code>.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="writeup-intigriti-july/images/03c-component-index.jpg" alt="Component index listing security-notes as restricted" />
+  <figcaption>
+    Figure 7. Component index: <code>security-notes</code> is labeled “Restricted
+    maintenance component.” That is the package whose preflight report holds the flag.
+  </figcaption>
+</figure>
+
+<p>
+  Direct package detail is blocked. That is expected and useful: it proves the
+  object exists and that a normal ACL rejects you.
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/12-403.jpg" alt="403 response for GET packages core security-notes" />
+  <figcaption>
+    Figure 8. <code>GET /api/packages/core/security-notes</code> returns 403
+    “System package details are restricted.” The object is real. You just may
+    not read it this way.
+  </figcaption>
+</figure>
+
+<div class="callout">
+  <strong>Working hypothesis after recon:</strong>
+  do not steal the package detail endpoint. Steal the <em>preflight report
+  pipeline</em>, because that pipeline is the only place the app admits the flag lives.
+</div>
+
+<h2 id="s4">4. What the client hard-codes (and why that is not security)</h2>
+<p>
+  Reading the SPA JS shows the browser always builds a “safe” manifest shape:
+</p>
+<pre>operation: "preflight"
+visibility: "private"
+package.scope: user.namespace   // UI field is read-only
+package.name: from form
+package.version: from form
+metadata.description: from form</pre>
+<p>
+  It pretty-prints that object as JSON, UTF-8 encodes it, then Base64-encodes
+  the bytes into <code>manifest_b64</code>. Sign returns
+  <code>approval_id</code>, <code>manifest_sha256</code>, <code>nonce</code>,
+  <code>expires_at</code>, and <code>signature</code>. Publish resubmits those
+  fields with the same <code>manifest_b64</code>.
+</p>
+<p>
+  Two lessons from the client:
+</p>
+<ol class="tight">
+  <li>
+    <strong>Client hard-codes are UX, not policy.</strong>
+    If you can call the API with curl, you can send any base64 JSON that the
+    server accepts. The read-only scope field is irrelevant.
+  </li>
+  <li>
+    <strong>Approvals bind to bytes.</strong>
+    The hash covers the exact decoded manifest bytes (or the exact
+    <code>manifest_b64</code> content after decode). You cannot sign package A
+    and publish package B by swapping only the package fields after signing.
+  </li>
+</ol>
+
+<figure>
+  <img src="writeup-intigriti-july/images/05b-history-top.jpg" alt="Publication history table top rows" />
+  <figcaption>
+    Figure 9. Publication history after several preflights. Each row is a report
+    you successfully ordered. History is a good place to see which targets the
+    server accepted.
+  </figcaption>
+</figure>
+
+<p>
+  Side notes from package copy that nudged later thinking:
+</p>
+<ul class="tight">
+  <li>
+    <code>legacy-adapter</code> release notes mention that historical ingestion
+    keeps the initial package declaration, while report rendering uses
+    reconstructed manifest data. That smells like more than one interpretation
+    of the same document.
+  </li>
+  <li>
+    <code>compat-sample</code> says protected findings are not included in ordinary reports.
+  </li>
+</ul>
+
+<h2 id="s5">5. Negative tests that map the real boundary</h2>
+<p>
+  With a real account, run the happy path first. Preflight your own
+  <code>hello-world</code>. You get a normal report. Pipeline works.
+</p>
+<p>
+  Then break one assumption at a time. The table below is the map that actually
+  led to the bug. Each row is a real request, not a guess.
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/11-negatives.jpg" alt="Table of negative tests and lessons" />
+  <figcaption>Figure 10. Negative tests and what each one taught about the server.</figcaption>
+</figure>
+
+<table>
+  <thead>
+    <tr><th>Experiment</th><th>Result</th><th>Lesson</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Preflight own <code>hello-world</code></td>
+      <td>Report ready, ordinary release notes</td>
+      <td>End-to-end pipeline works</td>
+    </tr>
+    <tr>
+      <td><code>scope: "core"</code> alone</td>
+      <td>Preview / sign rejected</td>
+      <td>Ownership is enforced somewhere</td>
+    </tr>
+    <tr>
+      <td>Own scope + name <code>security-notes</code></td>
+      <td><code>status: not_found</code></td>
+      <td>Name alone does not cross scopes</td>
+    </tr>
+    <tr>
+      <td>Sign own package, publish core package bytes</td>
+      <td>Publication approval invalid</td>
+      <td>Signature binds full manifest bytes</td>
+    </tr>
+    <tr>
+      <td>Extra keys, <code>__proto__</code>, wrong operation or visibility</td>
+      <td>Rejected</td>
+      <td>Schema is strict on members and enums</td>
+    </tr>
+    <tr>
+      <td>Duplicate <code>name</code> keys inside one package object</td>
+      <td>Last name used for report target</td>
+      <td>Per-field parse is last-wins</td>
+    </tr>
+    <tr>
+      <td>Core package first, own package second</td>
+      <td>Preview fails</td>
+      <td>First top-level package object drives authz</td>
+    </tr>
+    <tr>
+      <td>Own package first, core package second</td>
+      <td><strong>Flag</strong></td>
+      <td>Last top-level package object drives report identity</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Also ruled out while hunting:
+</p>
+<ul class="tight">
+  <li>Stored XSS via description: React renders report fields as text children, not HTML.</li>
+  <li>Approval field mix-and-match: hash and signature checks hold.</li>
+  <li>Cross-user publication IDOR: other users cannot read your publication id.</li>
+  <li>Unicode confusables for scope, path tricks on package URLs, basic prototype pollution on register/login/publish.</li>
+</ul>
+<p>
+  CSP allows <code>'unsafe-inline'</code>, so if an HTML sink existed, classic XSS
+  would matter. In this app path, it did not. The flag was never in a reflected
+  description field.
+</p>
+
+<h2 id="s6">6. JSON on the wire: ordered text vs abstract maps</h2>
+<p>
+  This is the first-principles piece. Skip it and the exploit looks like a magic
+  string. Include it and the bug is obvious once you see the dual read.
+</p>
+<p>
+  In the abstract data model, a JSON object is a collection of name/value pairs.
+  In the ECMA-404 text format, an object is a sequence of members between braces.
+  The standard does not define what happens when the same name appears twice.
+  Real parsers almost always keep the <strong>last</strong> value and drop earlier ones
+  when they build a map.
+</p>
+<p>
+  That is fine if every later step uses the same map. It is not fine if:
+</p>
+<ol class="tight">
+  <li>one check walks the raw text (or a multi-map) and takes the <strong>first</strong> member named <code>package</code>, and</li>
+  <li>another step builds a normal object and takes the <strong>last</strong> member named <code>package</code>.</li>
+</ol>
+<p>
+  You then have two truths inside one document. Authz can pass for truth A while
+  the report is built from truth B.
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/09-split-brain.jpg" alt="Diagram of first package for authz and last for report" />
+  <figcaption>
+    Figure 11. Same wire bytes, two reads: first <code>package</code> for authorization,
+    last <code>package</code> for report generation.
+  </figcaption>
+</figure>
+
+<h2 id="s7">7. The bug: first package for authz, last for the report</h2>
+<p>
+  On this service, the empirical model is simple:
+</p>
+<ul class="tight">
+  <li><strong>First</strong> top-level <code>"package"</code> object: authorization. Scope must equal the caller’s namespace.</li>
+  <li><strong>Last</strong> top-level <code>"package"</code> object: package identity for preflight and release notes.</li>
+</ul>
+<p>
+  Control experiment: reverse the order (core first, own second). Preview fails.
+  That is the fingerprint of first-for-auth, last-for-action. If both steps used
+  last-wins only, reverse order would still authorize you (own last) and then
+  report on your own package. It does not. Order matters because the checks disagree.
+</p>
+
+<div class="callout good-callout">
+  <strong>Root cause in one sentence:</strong>
+  the server never canonicalizes the decoded manifest to a single package object
+  before applying both authorization and report generation, so duplicate keys
+  create two package identities in one request.
+</div>
+
+<figure>
+  <img src="writeup-intigriti-july/images/07-payload.jpg" alt="Dual package JSON payload with own scope first and core last" />
+  <figcaption>
+    Figure 12. Dual <code>package</code> payload. First object: attacker namespace and a
+    package that exists there. Second object: <code>core</code> / <code>security-notes</code> / <code>1.0.0</code>.
+  </figcaption>
+</figure>
+
+<p>
+  Important detail: the first package name must be a package that exists in your
+  namespace if you care about a clean “package exists” report path for your own
+  identity, but the decisive part is the last object’s triple. In practice we used
+  <code>hello-world</code> as the first package because it is a seeded starter package.
+</p>
+<p>
+  The signed hash still covers the full ambiguous bytes. That is why approval
+  swap attacks fail, but dual-key polyglots succeed: you sign the polyglot once,
+  and every step after sign still sees the same bytes. Authz and action still
+  split those same bytes differently.
+</p>
+
+<h2 id="s8">8. Full exploit path you can replay</h2>
+<p>
+  Everything below is enough to reproduce from a clean browser or from curl.
+  Screenshots use pinchtab (local Chrome control plane) on the live challenge.
+</p>
+
+<ol class="tight">
+  <li>Open <code>https://challenge-0726.intigriti.io/challenge.html</code> and register or log in.</li>
+  <li><code>GET /api/me</code> with cookies. Read <code>user.namespace</code> and <code>csrf_token</code>.</li>
+  <li>Build the dual-package JSON (section 8.1). First package uses your namespace. Second uses <code>core</code> / <code>security-notes</code> / <code>1.0.0</code>.</li>
+  <li>UTF-8 encode, standard Base64, call that string <code>manifest_b64</code>.</li>
+  <li><code>POST /api/manifests/preview</code> with <code>Content-Type: application/json</code> and header <code>x-csrf-token</code>.</li>
+  <li><code>POST /api/manifests/sign</code> with the same body. Keep the full approval object.</li>
+  <li><code>POST /api/publications</code> with <code>manifest_b64</code> plus approval fields.</li>
+  <li><code>GET /api/publications/{publication_id}</code>. Flag is in <code>report.release_notes</code>.</li>
+</ol>
+
+<h3>8.1 Payload (raw JSON before Base64)</h3>
+<pre>{
+  "package": {
+    "scope": "&lt;YOUR_NAMESPACE&gt;",
+    "name": "hello-world",
+    "version": "1.0.0"
+  },
+  "package": {
+    "scope": "core",
+    "name": "security-notes",
+    "version": "1.0.0"
+  },
+  "metadata": {
+    "description": "x",
+    "visibility": "private"
+  },
+  "operation": "preflight"
+}</pre>
+
+<p>
+  Replace <code>&lt;YOUR_NAMESPACE&gt;</code> with the value from <code>/api/me</code>
+  (example used here: <code>hax44265-d098d1e1</code>). Do not include the leading
+  <code>@</code> in the JSON scope field; the API uses the bare namespace string.
+</p>
+
+<h3>8.2 Minimal shell reproduction</h3>
+<pre># after login cookies are in jar file cj
+NS=$(curl -sS -b cj -c cj https://challenge-0726.intigriti.io/api/me | jq -r .user.namespace)
+CSRF=$(curl -sS -b cj https://challenge-0726.intigriti.io/api/me | jq -r .csrf_token)
+
+# build dual package JSON with $NS, base64 it into $M, then:
+
+curl -sS -b cj -X POST https://challenge-0726.intigriti.io/api/manifests/preview \
+  -H "content-type: application/json" -H "x-csrf-token: $CSRF" \
+  -d "{\"manifest_b64\":\"$M\"}"
+
+curl -sS -b cj -X POST https://challenge-0726.intigriti.io/api/manifests/sign \
+  -H "content-type: application/json" -H "x-csrf-token: $CSRF" \
+  -d "{\"manifest_b64\":\"$M\"}"
+# save approval_id, manifest_sha256, nonce, expires_at, signature
+
+curl -sS -b cj -X POST https://challenge-0726.intigriti.io/api/publications \
+  -H "content-type: application/json" -H "x-csrf-token: $CSRF" \
+  -d "{\"manifest_b64\":\"$M\", ...approval fields...}"
+
+curl -sS -b cj https://challenge-0726.intigriti.io/api/publications/$PID
+# report.release_notes -&gt; INTIGRITI{...}
+</pre>
+
+<figure>
+  <img src="writeup-intigriti-july/images/06-flag-report.jpg" alt="UI publication report showing flag in release notes" />
+  <figcaption>
+    Figure 13. UI publication report for <code>@core/security-notes</code>. Status ready.
+    Release notes field contains the flag. Captured with pinchtab after a successful publish.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="writeup-intigriti-july/images/08-flag-json.jpg" alt="JSON API response with flag in release_notes" />
+  <figcaption>
+    Figure 14. Same evidence from the API:
+    <code>GET /api/publications/cf9bd28b-7bb9-4a08-9bca-3d30bffe8b84</code>.
+    Target is <code>@core/security-notes</code>, and
+    <code>report.release_notes</code> is the flag.
+  </figcaption>
+</figure>
+
+<p>
+  Example reproduction identifiers from this session:
+</p>
+<ul class="tight">
+  <li>Publication id: <code>cf9bd28b-7bb9-4a08-9bca-3d30bffe8b84</code></li>
+  <li>Approval id: <code>cb113dd8-320a-4649-98b5-eb5e9aec2538</code></li>
+  <li>Account namespace: <code>hax44265-d098d1e1</code></li>
+</ul>
+
+<figure>
+  <img src="writeup-intigriti-july/images/05-history.jpg" alt="Full publication history including many core security-notes rows" />
+  <figcaption>
+    Figure 15. Full publication history after repeated preflights. Multiple ready rows for
+    <code>@core/security-notes</code> show the path is stable, not a one-off race.
+  </figcaption>
+</figure>
+
+<h2 id="s9">9. Why this is not “only last-wins JSON”</h2>
+<p>
+  Last-wins alone is not a vulnerability if the whole pipeline uses one object.
+  The vulnerability is the <strong>split brain</strong>:
+</p>
+<ul class="tight">
+  <li>One interpretation answers: “Is this caller allowed to request a preflight?”</li>
+  <li>Another interpretation answers: “Which package’s protected notes do we emit?”</li>
+</ul>
+<p>
+  Related negatives that guided the search before the dual-package hit:
+</p>
+<ul class="tight">
+  <li>
+    Duplicate <code>scope</code> keys inside one package object were rejected even when identical.
+    That path is stricter than top-level duplicate <code>package</code> members.
+  </li>
+  <li>
+    Sending two <code>operation</code> values (preflight then transfer) could get past sign
+    and still fail at publish. That showed multi-key weirdness without yet giving the flag.
+  </li>
+  <li>
+    React text rendering made classic stored XSS in <code>description</code> a dead end.
+    The crown jewel was always the core report.
+  </li>
+</ul>
+<p>
+  Contest marketing frames the series as XSS CTFs. For this month, the impact still
+  ends on the protected report. The exploitable bug class is server-side
+  authorization failure via JSON parse disagreement, not a browser script sink.
+</p>
+
+<h2 id="s10">10. Impact, fixes, and submission package</h2>
+
+<h3>10.1 Impact</h3>
+<ul class="tight">
+  <li>
+    <strong>Confidentiality:</strong> any authenticated user can retrieve the
+    platform-protected preflight report for <code>@core/security-notes</code>,
+    including the challenge flag and any secrets that report would contain in a
+    real registry.
+  </li>
+  <li>
+    <strong>Trust model:</strong> a signed approval no longer means “this exact
+    package identity was authorized” if package identity is ambiguous under the
+    parser.
+  </li>
+  <li>
+    <strong>No victim interaction:</strong> no MitM, no self-XSS, no click from
+    another user. The attacker orders the report in their own session.
+  </li>
+</ul>
+
+<h3>10.2 Fix recommendations</h3>
+<ol class="tight">
+  <li>
+    <strong>Reject duplicate keys</strong> at parse time (strict JSON parser or
+    schema validator), or parse once into a single map and never re-walk raw text
+    for a second package identity.
+  </li>
+  <li>
+    <strong>One package object only</strong> in the schema. Assert
+    <code>package.scope === session.namespace</code> on that object after
+    canonicalization.
+  </li>
+  <li>
+    <strong>Bind the canonical package triple</strong>
+    <code>(scope, name, version)</code> into the signature material after
+    validation. Hashing raw ambiguous bytes protects integrity of those bytes,
+    not semantic uniqueness of package identity.
+  </li>
+  <li>
+    <strong>Re-check ACL</strong> on the resolved package identity immediately
+    before reading protected release notes, even if preview already passed.
+  </li>
+</ol>
+
+<h3>10.3 Timeline of reasoning (how we actually got there)</h3>
+<ol class="tight">
+  <li>Read JS: no app <code>dangerouslySetInnerHTML</code>; flag narrative points at protected report.</li>
+  <li>Account + happy path preflight of own packages.</li>
+  <li>Direct core scope blocked; approval swaps blocked; extra keys blocked.</li>
+  <li>Observatory CR-17 and component index name the target package and version.</li>
+  <li>Duplicate-key probes: field-level last-wins; multi-key oddities around operations.</li>
+  <li>Dual top-level <code>package</code> objects: first-auth / last-action returns the flag.</li>
+</ol>
+
+<h3>10.4 Submission package</h3>
+<table>
+  <thead><tr><th>Item</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Flag</td><td><code>INTIGRITI{019f8700-4613-74fb-923e-781903e4bee9}</code></td></tr>
+    <tr><td>Vulnerability</td><td>Authorization bypass via JSON duplicate top-level <code>package</code> keys</td></tr>
+    <tr><td>Payload</td><td>Own-namespace package object first, <code>core/security-notes</code> second</td></tr>
+    <tr><td>Steps</td><td>login → dual manifest Base64 → preview → sign → publish → GET report</td></tr>
+    <tr><td>Chrome</td><td>Works with SPA session cookies + fetch (pinchtab / latest Chrome)</td></tr>
+    <tr><td>Evidence files</td><td><code>findings/FLAG.json</code>, <code>payload-raw.json</code>, screenshots under <code>writeup/images/</code></td></tr>
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top:3rem;">
+  Study note for authorized challenge work only. Do not reuse against systems
+  outside explicit scope.
+</p>
+
+</div>
+</body>
+</html>
