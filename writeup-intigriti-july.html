@@ -178,6 +178,7 @@
     <li><a href="#s6">JSON on the wire: ordered text vs abstract maps</a></li>
     <li><a href="#s7">The bug: first package for authz, last for the report</a></li>
     <li><a href="#s8">Full exploit path you can replay</a></li>
+    <li><a href="#s8b">HTTP evidence (Caido re-run)</a></li>
     <li><a href="#s9">Why this is not “only last-wins JSON”</a></li>
     <li><a href="#s10">Impact, fixes, and submission package</a></li>
   </ol>
@@ -610,7 +611,7 @@ curl -sS -b cj https://challenge-0726.intigriti.io/api/publications/$PID
   <img src="writeup-intigriti-july/images/08-flag-json.jpg" alt="JSON API response with flag in release_notes" />
   <figcaption>
     Figure 14. Same evidence from the API:
-    <code>GET /api/publications/cf9bd28b-7bb9-4a08-9bca-3d30bffe8b84</code>.
+    <code>GET /api/publications/6c92cb70-6452-47ed-b1e2-3f3b8a2646e0</code>.
     Target is <code>@core/security-notes</code>, and
     <code>report.release_notes</code> is the flag.
   </figcaption>
@@ -620,7 +621,7 @@ curl -sS -b cj https://challenge-0726.intigriti.io/api/publications/$PID
   Example reproduction identifiers from this session:
 </p>
 <ul class="tight">
-  <li>Publication id: <code>cf9bd28b-7bb9-4a08-9bca-3d30bffe8b84</code></li>
+  <li>Publication id: <code>6c92cb70-6452-47ed-b1e2-3f3b8a2646e0</code></li>
   <li>Approval id: <code>cb113dd8-320a-4649-98b5-eb5e9aec2538</code></li>
   <li>Account namespace: <code>hax44265-d098d1e1</code></li>
 </ul>
@@ -632,6 +633,90 @@ curl -sS -b cj https://challenge-0726.intigriti.io/api/publications/$PID
     <code>@core/security-notes</code> show the path is stable, not a one-off race.
   </figcaption>
 </figure>
+
+
+<h2 id="s8b">8b. HTTP evidence (Caido re-run)</h2>
+<p>
+  The original writeup was light on raw HTTP. We re-ran the full chain through
+  <strong>Caido</strong> (local proxy <code>127.0.0.1:8080</code>) so every request
+  and response is in proxy history with exportable raw bytes. Cookies and CSRF
+  values below are redacted; the wire shape is unchanged.
+</p>
+<p>
+  Tool choice: <strong>Caido</strong> over installing gori for this pass. Caido was
+  already running, authenticated via the workspace skill, and gives full raw
+  request/response plus curl export. gori is a solid keyboard-driven proxy for
+  terminal work; it is optional here, not required for evidence quality.
+</p>
+
+<figure>
+  <img src="writeup-intigriti-july/images/http-history.jpg" alt="Caido history table of exploit steps" />
+  <figcaption>
+    Figure H0. Exploit re-run steps and Caido request IDs (login → me → 403 → reverse fail → preview → sign → publish → flag).
+  </figcaption>
+</figure>
+
+<h3>H1. Direct ACL still holds</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-01-core-403.jpg" alt="HTTP 403 on package core security-notes" />
+  <figcaption>
+    Figure H1. <code>GET /api/packages/core/security-notes</code> returns 403.
+    The package exists; detail access is denied. The bypass is the report pipeline, not this endpoint.
+  </figcaption>
+</figure>
+
+<h3>H2. Control: reverse dual package fails</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-02-preview-rev-fail.jpg" alt="Preview fails when core package is first" />
+  <figcaption>
+    Figure H2. Dual <code>package</code> with <code>core</code> first and own namespace second:
+    <code>POST /api/manifests/preview</code> → 400 <code>Manifest could not be previewed.</code>
+    First object drives authorization.
+  </figcaption>
+</figure>
+
+<h3>H3. Exploit order: preview accepts</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-03-preview-ok.jpg" alt="Preview succeeds with own package first" />
+  <figcaption>
+    Figure H3. Own namespace first, <code>core/security-notes</code> last → preview 200
+    <code>{"valid":true,"operation":"preflight"}</code>.
+  </figcaption>
+</figure>
+
+<h3>H4. Sign the polyglot bytes</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-04-sign.jpg" alt="Sign returns approval fields" />
+  <figcaption>
+    Figure H4. <code>POST /api/manifests/sign</code> on the same <code>manifest_b64</code> returns
+    approval id, sha256, nonce, expiry, and signature bound to those exact bytes.
+  </figcaption>
+</figure>
+
+<h3>H5. Publish</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-05-publish.jpg" alt="Publish creates publication" />
+  <figcaption>
+    Figure H5. <code>POST /api/publications</code> replays <code>manifest_b64</code> plus approval fields → 201 with <code>publication_id</code>.
+  </figcaption>
+</figure>
+
+<h3>H6. Flag in protected report</h3>
+<figure>
+  <img src="writeup-intigriti-july/images/http-06-report-flag.jpg" alt="GET publication returns flag in release_notes" />
+  <figcaption>
+    Figure H6. <code>GET /api/publications/6c92cb70-6452-47ed-b1e2-3f3b8a2646e0</code>
+    returns <code>target: @core/security-notes</code> and
+    <code>report.release_notes: INTIGRITI{019f8700-4613-74fb-923e-781903e4bee9}</code>.
+  </figcaption>
+</figure>
+
+<p>
+  Redacted raw pairs and Caido curl exports live under
+  <code>http-evidence/raw-http/</code> and <code>http-evidence/caido/</code> in the notes tree
+  (and in the git writeups pack when mirrored). Fresh re-run publication id:
+  <code>6c92cb70-6452-47ed-b1e2-3f3b8a2646e0</code> (Caido ids 86–93).
+</p>
 
 <h2 id="s9">9. Why this is not “only last-wins JSON”</h2>
 <p>
