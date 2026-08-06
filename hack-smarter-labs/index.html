@@ -1,15 +1,56 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter labs — mccleod1290</title>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter labs · mccleod1290</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
-body{font-family:system-ui,sans-serif;background:#0b0f14;color:#e8eef6;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6}
-a{color:#7cb8ff} .muted{color:#8b9bb0}
-</style></head><body>
-<h1>HackSmarter labs</h1>
-<p class="muted">Detailed writeups with screenshots. Short notes live in PwnJournal CJCA shelf.</p>
-<ul>
-  <li><a href="slayer/">Slayer (Easy, Windows)</a> — PS history → Administrator</li>
-</ul>
-<p><a href="../">← home</a></p>
-</body></html>
+  :root {
+    --bg: #0b0f14; --card: #151c27; --border: #243041; --text: #e8eef6;
+    --muted: #8b9bb0; --accent: #3b82f6; --good: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "DM Sans", system-ui, sans-serif;
+    background: radial-gradient(900px 500px at 10% -10%, rgba(59,130,246,0.14), transparent 55%), var(--bg);
+    color: var(--text); line-height: 1.6;
+  }
+  .wrap { width: min(720px, calc(100% - 2rem)); margin: 0 auto; padding: 2.5rem 0 4rem; }
+  a { color: #93c5fd; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .back { color: var(--muted); font-size: 0.92rem; }
+  h1 { letter-spacing: -0.03em; margin: 1rem 0 0.35rem; }
+  .lede { color: var(--muted); margin: 0 0 1.75rem; }
+  .card {
+    display: block; background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.2rem 1.3rem; margin-bottom: 1rem;
+    color: inherit; transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: rgba(59,130,246,0.45); transform: translateY(-2px); text-decoration: none; }
+  .tag {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 999px;
+    background: rgba(52,211,153,0.12); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.25);
+  }
+  .date { float: right; color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 0.82rem; }
+  h2 { margin: 0.65rem 0 0.4rem; font-size: 1.15rem; letter-spacing: -0.02em; }
+  p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../#writeups">← All writeups</a>
+    <h1>HackSmarter labs</h1>
+    <p class="lede">Detailed writeups with screenshots. Authorized lab training only.</p>
+
+    <a class="card" href="slayer/">
+      <span class="date">2026-08-06</span>
+      <span class="tag">Easy · Windows</span>
+      <h2>Slayer — PowerShell history to Administrator</h2>
+      <p>Credential residue in PSReadLine history → local admin → Desktop root flag.</p>
+    </a>
+  </div>
+</body>
+</html>

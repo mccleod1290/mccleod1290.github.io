@@ -341,17 +341,18 @@
       <div class="pill"><span class="dot" aria-hidden="true"></span> Security research notes</div>
       <h1>K. Madhura <span>Nadh</span></h1>
       <p class="lede">
-        Writeups from authorized CTFs and challenge work. First-principles notes on
-        web authz bugs, parse quirks, and end-to-end reproduction steps.
+        Writeups from authorized CTFs and lab work. First-principles notes on
+        web authz bugs, Windows credential residue, and end-to-end reproduction steps.
       </p>
       <div class="meta-row">
         <span class="chip"><strong>@</strong> mccleod1290</span>
         <span class="chip">mccleod1290.github.io</span>
-        <span class="chip">focus · web / authz</span>
+        <span class="chip">focus · web / Windows / labs</span>
       </div>
       <div class="actions">
-        <a class="btn btn-primary" href="writeup-intigriti-july.html">Read latest writeup</a>
-        <a class="btn btn-ghost" href="https://github.com/mccleod1290/writeups" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+        <a class="btn btn-primary" href="hack-smarter-labs/slayer/">Read latest writeup</a>
+        <a class="btn btn-ghost" href="#writeups">All writeups</a>
+        <a class="btn btn-ghost" href="https://github.com/mccleod1290" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
     </header>
 
@@ -359,13 +360,34 @@
       <div class="section-head">
         <div>
           <h2>Writeups</h2>
-          <p>Public, authorized challenge reports only.</p>
+          <p>Public, authorized challenge reports only — newest first.</p>
         </div>
+        <a class="btn btn-ghost" href="hack-smarter-labs/" style="padding:0.5rem 0.9rem;font-size:0.85rem">HackSmarter series →</a>
       </div>
       <div class="grid">
-        <a class="card" href="writeup-intigriti-july.html">
+        <a class="card half" href="hack-smarter-labs/slayer/">
           <div class="card-top">
-            <span class="tag">Intigriti · 0726</span>
+            <span class="tag">HackSmarter · Easy</span>
+            <span class="date">2026-08-06</span>
+          </div>
+          <h3>Slayer — PowerShell history to Administrator</h3>
+          <p>
+            Windows workstation foothold as <code style="font-family:JetBrains Mono,monospace;color:#c7d2fe">tyler.ramsey</code>.
+            PSReadLine history held a cleartext
+            <code style="font-family:JetBrains Mono,monospace;color:#c7d2fe">net user administrator</code>
+            password; reuse yielded local admin and the Desktop root flag.
+          </p>
+          <div class="foot">
+            <span class="mini">Windows</span>
+            <span class="mini">credential residue</span>
+            <span class="mini">RDP / SMB</span>
+            <span class="mini">screenshots</span>
+          </div>
+        </a>
+
+        <a class="card half" href="writeup-intigriti-july.html">
+          <div class="card-top">
+            <span class="tag blue">Intigriti · 0726</span>
             <span class="date">2026-07-30</span>
           </div>
           <h3>Dual package JSON authorization bypass</h3>
