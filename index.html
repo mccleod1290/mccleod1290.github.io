@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="K. Madhura Nadh (mccleod1290) — security writeups: HackSmarter, Intigriti CTF, Hack The Box, TryHackMe, and more authorized labs." />
+<meta name="description" content="K. Madhura Nadh (mccleod1290) — authorized security writeups: HackSmarter, Intigriti CTF, Hack The Box, TryHackMe, and more." />
 <title>K. Madhura Nadh · mccleod1290</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,11 +21,10 @@
     --accent-border: rgba(59, 130, 246, 0.35);
     --good: #34d399;
     --glow: rgba(59, 130, 246, 0.18);
+    --warn: #fbbf24;
     --radius: 16px;
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-    --warn: #fbbf24;
   }
-
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
@@ -39,7 +38,6 @@
     color: var(--text);
     line-height: 1.6;
   }
-
   a { color: inherit; text-decoration: none; }
   code {
     font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -52,18 +50,22 @@
     padding: 2rem 0 4rem;
   }
 
+  /* nav */
   nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2.75rem;
     padding: 0.85rem 1rem;
     border: 1px solid var(--border);
     border-radius: 999px;
-    background: rgba(18, 24, 32, 0.72);
+    background: rgba(18, 24, 32, 0.75);
     backdrop-filter: blur(12px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
   }
   .brand {
     display: flex;
@@ -79,36 +81,32 @@
     display: grid;
     place-items: center;
     background: linear-gradient(145deg, #2563eb, #1d4ed8 55%, #0ea5e9);
-    color: white;
+    color: #fff;
     font-size: 0.78rem;
     font-weight: 700;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
   }
   .nav-links {
     display: flex;
-    align-items: center;
-    gap: 0.2rem;
     flex-wrap: wrap;
+    gap: 0.15rem;
     justify-content: flex-end;
   }
   .nav-links a {
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     font-weight: 500;
-    padding: 0.4rem 0.65rem;
+    padding: 0.4rem 0.6rem;
     border-radius: 999px;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition: color 0.15s, background 0.15s;
   }
   .nav-links a:hover {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
   }
 
-  .hero {
-    display: grid;
-    gap: 1.25rem;
-    margin-bottom: 2.5rem;
-  }
+  /* hero */
+  .hero { display: grid; gap: 1.15rem; margin-bottom: 2.25rem; }
   .pill {
     display: inline-flex;
     align-items: center;
@@ -121,18 +119,15 @@
     color: #93c5fd;
     font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
   }
   .pill .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
     background: var(--good);
     box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15);
   }
   h1 {
     margin: 0;
-    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-size: clamp(2.15rem, 5vw, 3.35rem);
     line-height: 1.08;
     letter-spacing: -0.04em;
     font-weight: 700;
@@ -143,55 +138,35 @@
     background-clip: text;
     color: transparent;
   }
-  .lede {
-    max-width: 40rem;
-    margin: 0;
-    color: var(--muted);
-    font-size: 1.08rem;
-  }
-  .meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-  }
+  .lede { max-width: 40rem; margin: 0; color: var(--muted); font-size: 1.06rem; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0.8rem;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--bg-elev);
     color: var(--muted);
-    font-size: 0.86rem;
+    font-size: 0.84rem;
     font-family: "JetBrains Mono", ui-monospace, monospace;
   }
   .chip strong { color: var(--text); font-weight: 500; }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 0.25rem;
-  }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.7rem; }
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.75rem 1.15rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.72rem 1.1rem;
     border-radius: 12px;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.94rem;
     border: 1px solid transparent;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
   }
   .btn:hover { transform: translateY(-1px); }
   .btn-primary {
     background: linear-gradient(180deg, #3b82f6, #2563eb);
-    color: white;
+    color: #fff;
     box-shadow: 0 10px 28px var(--glow);
   }
-  .btn-primary:hover { box-shadow: 0 14px 34px rgba(59, 130, 246, 0.3); }
   .btn-ghost {
     background: transparent;
     border-color: var(--border);
@@ -199,19 +174,57 @@
   }
   .btn-ghost:hover { background: rgba(255, 255, 255, 0.03); }
 
-  /* platform directory */
+  /* tracks */
+  section { margin-top: 2.6rem; scroll-margin-top: 5rem; }
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 1.22rem;
+    letter-spacing: -0.02em;
+  }
+  .section-head p {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .badge {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .badge.live {
+    color: #6ee7b7;
+    border-color: rgba(52, 211, 153, 0.3);
+    background: rgba(52, 211, 153, 0.08);
+  }
+  .badge.tbd {
+    color: #fcd34d;
+    border-color: rgba(251, 191, 36, 0.3);
+    background: rgba(251, 191, 36, 0.08);
+  }
+
   .tracks {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
     gap: 0.65rem;
-    margin: 0.5rem 0 0.5rem;
   }
   .track {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.85rem 0.95rem;
-    border-radius: 12px;
+    gap: 0.3rem;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
     border: 1px solid var(--border);
     background: var(--bg-elev);
     transition: border-color 0.15s, transform 0.15s;
@@ -220,53 +233,14 @@
     border-color: rgba(59, 130, 246, 0.45);
     transform: translateY(-1px);
   }
-  .track .name { font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; }
+  .track .name { font-weight: 600; font-size: 0.92rem; }
   .track .status {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     color: var(--muted);
   }
   .track .status.live { color: var(--good); }
   .track .status.tbd { color: var(--warn); }
-
-  section { margin-top: 2.75rem; scroll-margin-top: 1.25rem; }
-  .section-head {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-  .section-head h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    letter-spacing: -0.02em;
-  }
-  .section-head p {
-    margin: 0.25rem 0 0;
-    color: var(--muted);
-    font-size: 0.92rem;
-  }
-  .section-head .count {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 0.78rem;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.35rem 0.7rem;
-    white-space: nowrap;
-  }
-  .section-head .count.live {
-    color: #6ee7b7;
-    border-color: rgba(52, 211, 153, 0.3);
-    background: rgba(52, 211, 153, 0.08);
-  }
-  .section-head .count.tbd {
-    color: #fcd34d;
-    border-color: rgba(251, 191, 36, 0.3);
-    background: rgba(251, 191, 36, 0.08);
-  }
 
   .grid {
     display: grid;
@@ -278,9 +252,9 @@
     background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1.25rem 1.3rem 1.35rem;
+    padding: 1.2rem 1.25rem 1.3rem;
     box-shadow: var(--shadow);
-    transition: border-color 0.15s ease, transform 0.15s ease;
+    transition: border-color 0.15s, transform 0.15s;
   }
   @media (min-width: 720px) {
     .card.half { grid-column: span 6; }
@@ -290,7 +264,7 @@
     transform: translateY(-2px);
   }
   .card.tbd {
-    opacity: 0.72;
+    opacity: 0.75;
     box-shadow: none;
     background: var(--bg-elev);
   }
@@ -304,13 +278,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.8rem;
   }
   .tag {
     display: inline-flex;
-    padding: 0.22rem 0.55rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -345,31 +319,27 @@
   }
   .date {
     color: var(--muted);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-family: "JetBrains Mono", ui-monospace, monospace;
   }
   .card h3 {
-    margin: 0 0 0.45rem;
-    font-size: 1.12rem;
+    margin: 0 0 0.4rem;
+    font-size: 1.08rem;
     letter-spacing: -0.02em;
   }
-  .card p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.95rem;
-  }
-  .card .foot {
+  .card p { margin: 0; color: var(--muted); font-size: 0.93rem; }
+  .foot {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
+    gap: 0.45rem;
+    margin-top: 0.95rem;
   }
   .mini {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--muted);
     border: 1px solid var(--border);
     border-radius: 999px;
-    padding: 0.22rem 0.55rem;
+    padding: 0.2rem 0.5rem;
     background: rgba(0, 0, 0, 0.18);
   }
 
@@ -377,16 +347,16 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--bg-elev);
-    padding: 1.35rem 1.4rem;
+    padding: 1.3rem 1.35rem;
   }
   .about p { margin: 0; color: var(--muted); }
-  .about p + p { margin-top: 0.75rem; }
+  .about p + p { margin-top: 0.7rem; }
   .about a { color: #93c5fd; }
   .about a:hover { text-decoration: underline; }
 
   footer {
-    margin-top: 3.5rem;
-    padding-top: 1.25rem;
+    margin-top: 3.25rem;
+    padding-top: 1.2rem;
     border-top: 1px solid var(--border);
     display: flex;
     flex-wrap: wrap;
@@ -399,19 +369,24 @@
   footer a:hover { text-decoration: underline; }
 
   @media (max-width: 720px) {
-    nav { border-radius: 18px; padding: 0.75rem; flex-direction: column; align-items: stretch; }
+    nav {
+      border-radius: 18px;
+      flex-direction: column;
+      align-items: stretch;
+      position: static;
+    }
     .nav-links { justify-content: flex-start; }
-    .brand span.hide-sm { display: none; }
+    .brand .hide-sm { display: none; }
   }
 </style>
 </head>
 <body>
   <div class="wrap">
     <nav aria-label="Primary">
-      <div class="brand">
+      <a class="brand" href="#">
         <div class="avatar" aria-hidden="true">MN</div>
         <span>K. Madhura Nadh <span class="hide-sm" style="color:var(--muted);font-weight:500">· mccleod1290</span></span>
-      </div>
+      </a>
       <div class="nav-links">
         <a href="#tracks">Tracks</a>
         <a href="#hacksmarter">HackSmarter</a>
@@ -420,7 +395,7 @@
         <a href="#tryhackme">THM</a>
         <a href="#ctf">CTF</a>
         <a href="#about">About</a>
-        <a href="https://github.com/mccleod1290" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/mccleod1290/mccleod1290.github.io" target="_blank" rel="noopener noreferrer">Source</a>
       </div>
     </nav>
 
@@ -428,8 +403,9 @@
       <div class="pill"><span class="dot" aria-hidden="true"></span> Authorized labs only</div>
       <h1>K. Madhura <span>Nadh</span></h1>
       <p class="lede">
-        First-principles writeups from authorized CTFs and labs — web authz,
-        Windows privilege paths, and full reproduction steps with screenshots.
+        Universal index for security writeups — HackSmarter, Intigriti CTF,
+        Hack The Box, TryHackMe, and other authorized challenges. First principles,
+        full steps, screenshots where it helps.
       </p>
       <div class="meta-row">
         <span class="chip"><strong>@</strong> mccleod1290</span>
@@ -443,12 +419,12 @@
       </div>
     </header>
 
-    <!-- TRACK DIRECTORY -->
+    <!-- TRACKS -->
     <section id="tracks">
       <div class="section-head">
         <div>
           <h2>Writeup tracks</h2>
-          <p>Jump to a platform. Live posts first; empty shelves marked TBD.</p>
+          <p>One hub. Jump to a platform. Live posts first; empty shelves marked TBD.</p>
         </div>
       </div>
       <div class="tracks">
@@ -469,7 +445,7 @@
           <span class="status tbd">TBD</span>
         </a>
         <a class="track" href="#ctf">
-          <span class="name">CTF challenges</span>
+          <span class="name">Other CTF</span>
           <span class="status tbd">TBD</span>
         </a>
       </div>
@@ -480,9 +456,9 @@
       <div class="section-head">
         <div>
           <h2>HackSmarter labs</h2>
-          <p>Hands-on private / community labs — Windows &amp; web paths.</p>
+          <p>Community / private lab writeups with screenshots.</p>
         </div>
-        <span class="count live">1 published</span>
+        <span class="badge live">1 published</span>
       </div>
       <div class="grid">
         <a class="card half" href="hack-smarter-labs/slayer/">
@@ -490,11 +466,10 @@
             <span class="tag">Easy · Windows</span>
             <span class="date">2026-08-06</span>
           </div>
-          <h3>Slayer — PowerShell history to Administrator</h3>
+          <h3>Slayer — PowerShell history → Administrator</h3>
           <p>
             Foothold as <code>tyler.ramsey</code>. PSReadLine history held a cleartext
-            <code>net user administrator</code> password; reuse yielded local admin
-            and the Desktop root flag.
+            <code>net user administrator</code> password; reuse → local admin → Desktop root flag.
           </p>
           <div class="foot">
             <span class="mini">credential residue</span>
@@ -508,13 +483,8 @@
             <span class="date">TBD</span>
           </div>
           <h3>More HackSmarter boxes</h3>
-          <p>
-            Next labs (e.g. Casper and path progression) will land here after solve +
-            dual-note publish (short local · detailed github.io).
-          </p>
-          <div class="foot">
-            <span class="mini">TBD</span>
-          </div>
+          <p>Next labs (e.g. Casper and path progression) land here after solve + publish.</p>
+          <div class="foot"><span class="mini">TBD</span></div>
         </div>
       </div>
     </section>
@@ -524,9 +494,9 @@
       <div class="section-head">
         <div>
           <h2>Intigriti CTF</h2>
-          <p>Monthly / challenge CTF writeups from Intigriti events.</p>
+          <p>Monthly challenge writeups from Intigriti events.</p>
         </div>
-        <span class="count live">1 published</span>
+        <span class="badge live">1 published</span>
       </div>
       <div class="grid">
         <a class="card half" href="writeup-intigriti-july.html">
@@ -537,8 +507,7 @@
           <h3>Dual package JSON authorization bypass</h3>
           <p>
             Registry Observatory split authz and action across duplicate top-level
-            <code>package</code> keys. First object passed ownership checks; last
-            selected protected <code>@core/security-notes</code> for the flag.
+            <code>package</code> keys — first object for ownership, last for the protected report / flag.
           </p>
           <div class="foot">
             <span class="mini">authz bypass</span>
@@ -552,22 +521,20 @@
             <span class="date">TBD</span>
           </div>
           <h3>Future Intigriti months</h3>
-          <p>Later monthly CTF challenges will be added under this track after publish.</p>
-          <div class="foot">
-            <span class="mini">TBD</span>
-          </div>
+          <p>Later monthly CTF challenges will be listed under this track.</p>
+          <div class="foot"><span class="mini">TBD</span></div>
         </div>
       </div>
     </section>
 
-    <!-- HACK THE BOX -->
+    <!-- HTB -->
     <section id="hackthebox">
       <div class="section-head">
         <div>
           <h2>Hack The Box</h2>
           <p>Machine writeups (retired / allowed disclosure only).</p>
         </div>
-        <span class="count tbd">0 · TBD</span>
+        <span class="badge tbd">0 · TBD</span>
       </div>
       <div class="grid">
         <div class="card tbd" aria-disabled="true">
@@ -578,7 +545,7 @@
           <h3>No public HTB writeups yet</h3>
           <p>
             Progressive HTB / CJCA-path notes will appear here when ready for public
-            publish. Working short notes stay in the private vault until then.
+            publish. Working notes stay private until then.
           </p>
           <div class="foot">
             <span class="mini">machines</span>
@@ -589,14 +556,14 @@
       </div>
     </section>
 
-    <!-- TRYHACKME -->
+    <!-- THM -->
     <section id="tryhackme">
       <div class="section-head">
         <div>
           <h2>TryHackMe</h2>
           <p>Room writeups and learning paths.</p>
         </div>
-        <span class="count tbd">0 · TBD</span>
+        <span class="badge tbd">0 · TBD</span>
       </div>
       <div class="grid">
         <div class="card tbd" aria-disabled="true">
@@ -605,10 +572,7 @@
             <span class="date">TBD</span>
           </div>
           <h3>No public TryHackMe writeups yet</h3>
-          <p>
-            Room-level first-principles posts will be listed here after completion
-            and cleanup for public release.
-          </p>
+          <p>Room-level first-principles posts will be listed here after cleanup for public release.</p>
           <div class="foot">
             <span class="mini">rooms</span>
             <span class="mini">paths</span>
@@ -618,14 +582,14 @@
       </div>
     </section>
 
-    <!-- CTF (generic / other) -->
+    <!-- OTHER CTF -->
     <section id="ctf">
       <div class="section-head">
         <div>
-          <h2>CTF challenges</h2>
-          <p>Other CTFs, one-offs, and multi-challenge events (outside Intigriti).</p>
+          <h2>Other CTF challenges</h2>
+          <p>One-offs and multi-challenge events outside Intigriti.</p>
         </div>
-        <span class="count tbd">0 · TBD</span>
+        <span class="badge tbd">0 · TBD</span>
       </div>
       <div class="grid">
         <div class="card tbd" aria-disabled="true">
@@ -635,8 +599,8 @@
           </div>
           <h3>No extra CTF writeups yet</h3>
           <p>
-            PicoCTF, HTB CTF, university / community events, and misc challenges
-            will land here. Intigriti lives in its own section above.
+            PicoCTF, HTB CTF, community events, and misc challenges land here.
+            Intigriti stays in its own section above.
           </p>
           <div class="foot">
             <span class="mini">web</span>
@@ -657,17 +621,17 @@
       </div>
       <div class="about">
         <p>
-          Personal GitHub Pages site for technical writeups. Content is limited to
-          systems and challenges I am authorized to test.
+          This is the <strong style="color:var(--text)">universal public index</strong>
+          for my authorized lab and CTF writeups. All published HTML posts live on this
+          GitHub Pages site.
         </p>
         <p>
-          <strong style="color:var(--text)">Dual-note rule:</strong> short operator
-          notes stay in the private vault; long-form HTML with screenshots ships here
-          (HackSmarter, Intigriti, later HTB / THM / CTF).
+          Short operator notes stay in the private vault. Long-form posts with screenshots
+          ship here under each track (HackSmarter, Intigriti, later HTB / THM / CTF).
         </p>
         <p>
           Site source:
-          <a href="https://github.com/mccleod1290/mccleod1290.github.io">mccleod1290.github.io</a>.
+          <a href="https://github.com/mccleod1290/mccleod1290.github.io">github.com/mccleod1290/mccleod1290.github.io</a>
         </p>
       </div>
     </section>
