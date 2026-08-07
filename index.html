@@ -416,7 +416,7 @@
         <span class="chip" id="site-version">build · 2026-08-06 17:46 UTC</span>
       </div>
       <div class="actions">
-        <a class="btn btn-primary" href="hack-smarter-labs/implicit/">Latest: Implicit</a>
+        <a class="btn btn-primary" href="hack-smarter-labs/embedded/">Latest: Embedded</a>
         <a class="btn btn-ghost" href="#tracks">Browse tracks</a>
         <a class="btn btn-ghost" href="https://github.com/mccleod1290" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
@@ -436,7 +436,7 @@
       <div class="tracks">
         <a class="track" href="#hacksmarter">
           <span class="name">HackSmarter</span>
-          <span class="status live">5 live</span>
+          <span class="status live">6 live</span>
         </a>
         <a class="track" href="#intigriti">
           <span class="name">Intigriti CTF</span>
@@ -464,9 +464,25 @@
           <h2>HackSmarter labs</h2>
           <p>Community / private lab writeups with screenshots.</p>
         </div>
-        <span class="badge live">5 published</span>
+        <span class="badge live">6 published</span>
       </div>
       <div class="grid">
+        <a class="card half" href="hack-smarter-labs/embedded/">
+          <div class="card-top">
+            <span class="tag">Medium · Web</span>
+            <span class="date">2026-08-07</span>
+          </div>
+          <h3>Embedded — XSS MFA kill → SSH</h3>
+          <p>
+            Spray to tommy, stored XSS hits <code>/api/mfa/disable</code>, JODIT
+            <code>file://</code> LFI steals SSH key, flag on :2222.
+          </p>
+          <div class="foot">
+            <span class="mini">stored XSS</span>
+            <span class="mini">MFA bypass</span>
+            <span class="mini">LFI</span>
+          </div>
+        </a>
         <a class="card half" href="hack-smarter-labs/implicit/">
           <div class="card-top">
             <span class="tag">Easy · Web + patch</span>

