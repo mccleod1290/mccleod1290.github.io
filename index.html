@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- site-version: 2026-08-07 16:45 UTC -->
+<!-- site-version: 2026-08-07 16:50 UTC -->
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -416,7 +416,7 @@
         <span class="chip" id="site-version">build · 2026-08-06 17:46 UTC</span>
       </div>
       <div class="actions">
-        <a class="btn btn-primary" href="hack-smarter-labs/health-smarter/">Latest: Health Smarter</a>
+        <a class="btn btn-primary" href="hack-smarter-labs/edge/">Latest: Edge (Windows)</a>
         <a class="btn btn-ghost" href="#tracks">Browse tracks</a>
         <a class="btn btn-ghost" href="https://github.com/mccleod1290" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
@@ -464,9 +464,57 @@
           <h2>HackSmarter labs</h2>
           <p>Community / private lab writeups with screenshots.</p>
         </div>
-        <span class="badge live">7 published</span>
+        <span class="badge live">10 published</span>
       </div>
       <div class="grid">
+        <a class="card half" href="hack-smarter-labs/edge/">
+          <div class="card-top">
+            <span class="tag">Easy · Windows</span>
+            <span class="date">2026-08-06</span>
+          </div>
+          <h3>Edge — Kiosk breakout via Edge LOLBIN</h3>
+          <p>
+            Assumed breach as <code>jmorris</code>, hardcoded <code>svc_vdi</code>,
+            Edge Ctrl+O → <code>cmd.exe</code>, PuTTY conf → admin flag.
+          </p>
+          <div class="foot">
+            <span class="mini">kiosk escape</span>
+            <span class="mini">LOLBIN</span>
+            <span class="mini">PuTTY</span>
+          </div>
+        </a>
+        <a class="card half" href="hack-smarter-labs/evasive/">
+          <div class="card-top">
+            <span class="tag">Medium · Windows</span>
+            <span class="date">2026-08-07</span>
+          </div>
+          <h3>Evasive — Guest SMB → potato → SAM</h3>
+          <p>
+            Guest docs password pattern, mail phish to alfonso, IIS EfsPotato,
+            admin NTLM + KeePass card answers.
+          </p>
+          <div class="foot">
+            <span class="mini">phishing</span>
+            <span class="mini">SeImpersonate</span>
+            <span class="mini">secretsdump</span>
+          </div>
+        </a>
+        <a class="card half" href="hack-smarter-labs/staged/">
+          <div class="card-top">
+            <span class="tag">Medium · Windows</span>
+            <span class="date">2026-08-07</span>
+          </div>
+          <h3>Staged — Webshell → MySQL final flag</h3>
+          <p>
+            Webshell as j.smith, EfsPotato SYSTEM, crack p.richardson,
+            PHP mysqli to sqlsrv for <code>final_config</code> token.
+          </p>
+          <div class="foot">
+            <span class="mini">EfsPotato</span>
+            <span class="mini">NTLM crack</span>
+            <span class="mini">dual-host</span>
+          </div>
+        </a>
         <a class="card half" href="hack-smarter-labs/health-smarter/">
           <div class="card-top">
             <span class="tag">Medium · Web</span>
@@ -734,7 +782,7 @@
       <span>
         <a href="https://github.com/mccleod1290/mccleod1290.github.io">Site source</a>
         ·
-        <a href="hack-smarter-labs/health-smarter/">Latest</a>
+        <a href="hack-smarter-labs/edge/">Latest</a>
         ·
         <a href="#tracks">Tracks</a>
       </span>

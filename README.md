@@ -26,13 +26,16 @@ find . -path ./.git -prune -o -type f -exec chmod 644 {} +
 
 | Track | Path |
 |-------|------|
+| HackSmarter · Edge (Windows) | `hack-smarter-labs/edge/` |
+| HackSmarter · Evasive (Windows) | `hack-smarter-labs/evasive/` |
+| HackSmarter · Staged (Windows) | `hack-smarter-labs/staged/` |
+| HackSmarter · Slayer (Windows) | `hack-smarter-labs/slayer/` |
 | HackSmarter · Health Smarter | `hack-smarter-labs/health-smarter/` |
 | HackSmarter · Embedded | `hack-smarter-labs/embedded/` |
 | HackSmarter · Implicit | `hack-smarter-labs/implicit/` |
 | HackSmarter · Verbose | `hack-smarter-labs/verbose/` |
 | HackSmarter · Polution | `hack-smarter-labs/polution/` |
 | HackSmarter · Hunter | `hack-smarter-labs/hunter/` |
-| HackSmarter · Slayer | `hack-smarter-labs/slayer/` |
 | Intigriti · July 2026 | `writeup-intigriti-july.html` |
 | HTB / THM / other CTF | TBD on home index |
 

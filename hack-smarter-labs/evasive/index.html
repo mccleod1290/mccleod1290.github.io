@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Evasive (Medium) — Guest SMB to phishing, EfsPotato, SAM dump</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --accent: #ef3257; --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; padding: 0 4px; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Windows · Medium</span>
+  <h1>Evasive: Guest docs → mail phish → IIS potato → SAM + KeePass</h1>
+  <p class="muted">Authorized lab write-up. Lab author: hadrian3689. Solved 2026-08-07.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Challenge / Box</td><td>Evasive</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Category</td><td>Windows AD-less multi-service · phishing · SeImpersonate</td></tr>
+  <tr><td>Vulnerability</td><td>Guest-readable policy PDFs, weak default password pattern, mail-assisted shell, IIS SeImpersonate</td></tr>
+  <tr><td>Difficulty</td><td>Medium</td></tr>
+  <tr><td>Target (lab)</td><td><code>10.1.84.198</code> · <code>WINSERVER01</code> / <code>winserver01.hs</code></td></tr>
+  <tr><td>Outcome</td><td>SYSTEM via EfsPotato · admin NTLM · lab Q&amp;A answers</td></tr>
+</table>
+
+<h2>Pre-req knowledge</h2>
+<ul>
+  <li>SMB guest / null-ish access and share spidering</li>
+  <li>Mail stack (POP3/SMTP) as an internal phishing channel</li>
+  <li>IIS app-pool identity and <code>SeImpersonatePrivilege</code> potato-class PE</li>
+  <li><code>reg save</code> SAM/SYSTEM + secretsdump; KeePass live unlock</li>
+</ul>
+
+<h2>Core concept (one line)</h2>
+<p><strong>Readable onboarding docs leak the password pattern; mail lets you phish a user who can write webroot; the IIS pool then potato’s to SYSTEM.</strong></p>
+
+<h2>Introduction</h2>
+<p>
+Evasive is a multi-service Windows host (IIS, hMailServer, SMB, RDP). Start from
+<strong>guest SMB</strong> document shares, recover a year-tweaked default password, authenticate
+as <code>roger</code> to mail, phish <code>alfonso</code> with an AV-friendly reverse shell, then abuse
+writable <code>wwwroot</code> → ASPX as the app pool → <strong>EfsPotato</strong> → SAM dump. Lab questions
+also require a merger company name and a credit card from KeePass.
+</p>
+
+<h2>Root cause</h2>
+<p>
+Information disclosure (guest docs) + predictable password policy + user who can
+plant web content + classic SeImpersonate on IIS. Anti-bruteforce on mail forces
+intelligence-led password guessing, not spraying.
+</p>
+
+<pre>guest SMB docs PDF
+  → NewUser2024! pattern → live year NewUser2025!
+  → roger POP3/SMTP/SMB
+  → phish alfonso (Go reverse shell)
+  → merger_info.pdf + write wwwroot
+  → ASPX as IIS APPPOOL → SeImpersonate → EfsPotato SYSTEM
+  → reg save SAM/SYSTEM → secretsdump (admin NTLM)
+  → RDP alfonso → KeePass unlocked → credit card</pre>
+
+<h3>Step 1: Service map</h3>
+<div class="why"><strong>Why we do this:</strong> This box is multi-protocol; the attack surface is mail + web + SMB, not only RDP.</div>
+<pre>nmap -Pn -n -sV -sC -p 25,80,110,135,139,143,445,587,3389 10.1.84.198</pre>
+<p><strong>What you should see:</strong> hMailServer SMTP/POP3, IIS 10 on 80, SMB, RDP. Host <code>winserver01.hs</code>.</p>
+
+<h3>Step 2: Guest SMB → onboarding PDFs</h3>
+<div class="why"><strong>Why we do this:</strong> Guest/read shares often hold the exact strings users were told to use as first passwords.</div>
+<pre>nxc smb 10.1.84.198 -u guest -p '' --shares
+# spider docs share; pull old_user_setup_doc.pdf / mail_doc.pdf</pre>
+<p>PDF describes default style <code>NewUser2024!</code>. Live passwords used the <strong>current year</strong>:</p>
+<pre>roger / NewUser2025!</pre>
+<p><strong>Do not brute mail</strong> — anti-bruteforce will lock the path. Use the doc pattern + year tweak.</p>
+
+<h3>Step 3: Roger mail + internal phish to alfonso</h3>
+<div class="why"><strong>Why we do this:</strong> Mail auth proves the password and gives a channel to deliver a payload to a higher-value interactive user.</div>
+<pre># POP3/SMTP as roger:NewUser2025!
+# Craft phishing mail with Go reverse shell (lab-friendly / AV-tolerant)
+# Catch shell as alfonso; reset/confirm NewUser2025!x style if needed for RDP</pre>
+
+<figure>
+  <img src="images/01-alfonso-rdp.png" alt="RDP session as alfonso" />
+  <figcaption>Figure 1 — Interactive session as alfonso after the phishing path.</figcaption>
+</figure>
+
+<h3>Step 4: Company answer + webroot write</h3>
+<div class="why"><strong>Why we do this:</strong> Lab scoring asks which company is being bought; the same user context can plant IIS content.</div>
+<pre># Read merger_info.pdf from alfonso-accessible paths
+# Answer: AI is the Future Corp
+# Write ASPX shell under IIS wwwroot (where alfonso has write)</pre>
+<div class="flag">Company: AI is the Future Corp</div>
+
+<h3>Step 5: IIS app pool → SeImpersonate → EfsPotato → SYSTEM</h3>
+<div class="why"><strong>Why we do this:</strong> Default app-pool tokens often hold SeImpersonate. Potato-family tools turn that into SYSTEM without a kernel bug.</div>
+<pre># Trigger ASPX → shell as IIS APPPOOL\...
+whoami /priv   # expect SeImpersonatePrivilege
+# EfsPotato (or peer) → NT AUTHORITY\SYSTEM
+reg save HKLM\SAM C:\Windows\Temp\sam.save
+reg save HKLM\SYSTEM C:\Windows\Temp\system.save
+# pull hives; secretsdump.py -sam sam.save -system system.save LOCAL</pre>
+<div class="flag">Administrator NTLM: 4366ec0f86e29be2a4a5e87a1ba922ec</div>
+
+<h3>Step 6: KeePass credit card</h3>
+<div class="why"><strong>Why we do this:</strong> Lab final question — secrets in an unlocked KeePass on the user session.</div>
+<pre># RDP as alfonso; KeePass process/session already unlocked in lab state
+# Read compromised user card</pre>
+<div class="flag">Credit card: 1234-5555-6666-8521</div>
+
+<p><strong>Creds summary</strong></p>
+<pre>guest / (empty)              SMB docs READ
+roger / NewUser2025!         POP3/SMTP/SMB; later local admin path notes
+alfonso / NewUser2025!x      RDP + KeePass
+Administrator NTLM           4366ec0f86e29be2a4a5e87a1ba922ec</pre>
+
+<h2>Security impact</h2>
+<ul>
+  <li>Guest share → full SYSTEM via realistic internal kill chain</li>
+  <li>Cleartext-equivalent admin NTLM for pass-the-hash</li>
+  <li>PII (card) from password manager residue on interactive session</li>
+</ul>
+
+<h2>Mitigation</h2>
+<ul>
+  <li>Disable guest SMB; never put password policy examples on open shares.</li>
+  <li>Force unique first passwords + mandatory change; no year-suffix patterns.</li>
+  <li>Harden mail (MFA, phishing controls); do not allow users to write IIS roots.</li>
+  <li>Run app pools without SeImpersonate where possible; isolate sites; patch potato classes with token filtering / hardened services.</li>
+  <li>Lock KeePass when idle; never leave vaults unlocked on shared consoles.</li>
+  <li>Note: remote admin token after local admin add may need <code>LocalAccountTokenFilterPolicy</code> awareness — fix the privilege model, do not rely on the filter as security theater alone.</li>
+</ul>
+
+<h2>Beyond Root</h2>
+<h3>Blue team — stop the vuln</h3>
+<ul>
+  <li>Alert on guest SMB document reads of HR/IT PDFs.</li>
+  <li>Detect ASPX drops under wwwroot and <code>reg save</code> of SAM/SYSTEM.</li>
+  <li>Parent-child: <code>w3wp.exe</code> → potato / cmd / powershell.</li>
+</ul>
+<h3>Document the engagement</h3>
+<ul>
+  <li>Ops: <code>~/htb/evasive/ATTACK_LOG.md</code>, <code>loot/ANSWER_*.txt</code>, hives</li>
+  <li>Public: this page</li>
+</ul>
+
+<h2>Conclusion</h2>
+<p>
+Evasive rewards patient OSINT on shares and careful phishing over noisy sprays. Once web write lands, classic IIS impersonation PE ends the host. The “answers” are just structured loot from the same chain.
+</p>
+
+<footer>
+  <p>Authorized training write-up only. Do not use these steps against systems without permission.</p>
+  <p><a href="../../">← mccleod1290.github.io</a> · <a href="../">HackSmarter labs</a></p>
+</footer>
+
+</div>
+</body>
+</html>
