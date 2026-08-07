@@ -472,14 +472,14 @@
             <span class="tag">Easy · Windows</span>
             <span class="date">2026-08-06</span>
           </div>
-          <h3>Edge — Kiosk breakout via Edge LOLBIN</h3>
+          <h3>Edge: kiosk breakout with Edge open dialog</h3>
           <p>
-            Assumed breach as <code>jmorris</code>, hardcoded <code>svc_vdi</code>,
-            Edge Ctrl+O → <code>cmd.exe</code>, PuTTY conf → admin flag.
+            Start as <code>jmorris</code>. Find hardcoded <code>svc_vdi</code>.
+            Edge Ctrl+O runs <code>cmd.exe</code>. PuTTY conf gives admin flag.
           </p>
           <div class="foot">
             <span class="mini">kiosk escape</span>
-            <span class="mini">LOLBIN</span>
+            <span class="mini">Edge open</span>
             <span class="mini">PuTTY</span>
           </div>
         </a>
@@ -488,10 +488,10 @@
             <span class="tag">Medium · Windows</span>
             <span class="date">2026-08-07</span>
           </div>
-          <h3>Evasive — Guest SMB → potato → SAM</h3>
+          <h3>Evasive: guest SMB, phish, potato, SAM</h3>
           <p>
-            Guest docs password pattern, mail phish to alfonso, IIS EfsPotato,
-            admin NTLM + KeePass card answers.
+            Guest docs show the password year pattern. Phish alfonso. IIS EfsPotato.
+            Admin NTLM and KeePass card answers.
           </p>
           <div class="foot">
             <span class="mini">phishing</span>
@@ -504,15 +504,15 @@
             <span class="tag">Medium · Windows</span>
             <span class="date">2026-08-07</span>
           </div>
-          <h3>Staged — Webshell → MySQL final flag</h3>
+          <h3>Staged: webshell to MySQL final flag</h3>
           <p>
-            Webshell as j.smith, EfsPotato SYSTEM, crack p.richardson,
-            PHP mysqli to sqlsrv for <code>final_config</code> token.
+            Webshell as j.smith. EfsPotato to SYSTEM. Crack p.richardson.
+            PHP mysqli to sqlsrv for the <code>final_config</code> token.
           </p>
           <div class="foot">
             <span class="mini">EfsPotato</span>
             <span class="mini">NTLM crack</span>
-            <span class="mini">dual-host</span>
+            <span class="mini">two hosts</span>
           </div>
         </a>
         <a class="card half" href="hack-smarter-labs/health-smarter/">
@@ -616,13 +616,13 @@
             <span class="tag">Easy · Windows</span>
             <span class="date">2026-08-06</span>
           </div>
-          <h3>Slayer — PowerShell history → Administrator</h3>
+          <h3>Slayer: PowerShell history to Administrator</h3>
           <p>
-            Foothold as <code>tyler.ramsey</code>. PSReadLine history held a cleartext
-            <code>net user administrator</code> password; reuse → local admin → Desktop root flag.
+            Start as <code>tyler.ramsey</code>. PSReadLine history has a clear
+            <code>net user administrator</code> password. Reuse it. Read Desktop root flag.
           </p>
           <div class="foot">
-            <span class="mini">credential residue</span>
+            <span class="mini">shell history</span>
             <span class="mini">RDP / SMB</span>
             <span class="mini">screenshots</span>
           </div>
