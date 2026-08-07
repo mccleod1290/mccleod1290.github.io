@@ -1,0 +1,2 @@
+// Intercept MFA verify failure and replace body with:
+{"success":true,"redirect":"/dashboard.html"}

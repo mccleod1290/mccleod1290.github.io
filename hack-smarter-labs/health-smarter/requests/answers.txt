@@ -1,0 +1,4 @@
+valid_user: m.thompson@healthsmarter.hsm
+password: Care4All!
+flag1: HSM{e78322f22ccb4eb8b4277e8491e00982}
+flag2: HSM{35dca15a0eb94bd781f82ff45f070bff}
