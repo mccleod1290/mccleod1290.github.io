@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Windows labs · mccleod1290</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0f14; --card: #151c27; --border: #243041; --text: #e8eef6;
+    --muted: #8b9bb0; --accent: #3b82f6; --good: #34d399; --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "DM Sans", system-ui, sans-serif;
+    background: radial-gradient(900px 500px at 10% -10%, rgba(239,50,87,0.12), transparent 55%), var(--bg);
+    color: var(--text); line-height: 1.6;
+  }
+  .wrap { width: min(720px, calc(100% - 2rem)); margin: 0 auto; padding: 2.5rem 0 4rem; }
+  a { color: #93c5fd; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .back { color: var(--muted); font-size: 0.92rem; }
+  h1 { letter-spacing: -0.03em; margin: 1rem 0 0.35rem; }
+  .lede { color: var(--muted); margin: 0 0 1.75rem; }
+  .card {
+    display: block; background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.2rem 1.3rem; margin-bottom: 1rem;
+    color: inherit; transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: rgba(239,50,87,0.45); transform: translateY(-2px); text-decoration: none; }
+  .tag {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 999px;
+    background: rgba(239,50,87,0.12); color: #ff7a95; border: 1px solid rgba(239,50,87,0.25);
+  }
+  .tag.wip { background: rgba(251,191,36,0.12); color: #fcd34d; border-color: rgba(251,191,36,0.3); }
+  .date { float: right; color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 0.82rem; }
+  h2 { margin: 0.65rem 0 0.4rem; font-size: 1.15rem; letter-spacing: -0.02em; }
+  p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../">← HackSmarter tracks</a>
+    <h1>Windows labs</h1>
+    <p class="lede">Six HackSmarter Windows machines. Authorized training only.</p>
+
+    <a class="card" href="edge/">
+      <span class="date">2026-08-06</span>
+      <span class="tag">Easy</span>
+      <h2>Edge</h2>
+      <p>Kiosk portal, Edge open dialog, PuTTY password, admin flag.</p>
+    </a>
+
+    <a class="card" href="slayer/">
+      <span class="date">2026-08-06</span>
+      <span class="tag">Easy</span>
+      <h2>Slayer</h2>
+      <p>PowerShell history holds admin password. Reuse it.</p>
+    </a>
+
+    <a class="card" href="evasive/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Medium</span>
+      <h2>Evasive</h2>
+      <p>Guest SMB docs, mail phish, IIS EfsPotato, SAM and KeePass.</p>
+    </a>
+
+    <a class="card" href="staged/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Medium</span>
+      <h2>Staged</h2>
+      <p>Webshell, potato, crack NTLM, MySQL final flag.</p>
+    </a>
+
+    <a class="card" href="kiosk/">
+      <span class="date">2026-08-07</span>
+      <span class="tag">Medium</span>
+      <h2>Kiosk</h2>
+      <p>Print escape, unattend, unquoted path, DLL plant. Flag values not in loot.</p>
+    </a>
+
+    <a class="card" href="sideloaded/">
+      <span class="date">2026-08-07</span>
+      <span class="tag wip">Hard · WIP</span>
+      <h2>Sideloaded</h2>
+      <p>Host offline during session. Prep only. Full writeup after solve.</p>
+    </a>
+  </div>
+</body>
+</html>

