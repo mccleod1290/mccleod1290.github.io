@@ -1,0 +1,5 @@
+#5     GET    http  http://10.1.13.210/admin/dashboard  -> 200  6.2kB 489.0ms
+#4     POST   http  http://10.1.13.210/mfa  -> 302  932B 476.3ms
+#3     GET    http  http://10.1.13.210/api/users/all  -> 200  1.0kB 478.8ms
+#2     POST   http  http://10.1.13.210/login  -> 302  830B 494.6ms
+#1     GET    http  http://10.1.13.210/api/users/all  -> 200  1.0kB 482.4ms

@@ -1,0 +1,60 @@
+=== REQUEST (HTTP/1.1) ===
+POST http://10.1.13.210/mfa HTTP/1.1·
+Host: 10.1.13.210·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Cookie: session=eyJtZmFfdXNlciI6ImFkbWluIiwic2Vzc2lvbl9pZCI6Ijk3MjIxNWFkLWU4OWYtNGNlMi1iOGIxLWY3ZjZhODQ4NGMzYiJ9.anXqUg.80d3yFI5_a5FTZIB8tMXSe35m6A·
+Content-Type: application/x-www-form-urlencoded·
+Content-Length: 9·
+·
+
+code=5402
+
+=== RESPONSE ===
+HTTP/1.1 302 FOUND·
+Server: Werkzeug/3.1.5 Python/3.12.3·
+Date: Fri, 07 Aug 2026 14:23:15 GMT·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 189·
+Location: /·
+Vary: Cookie·
+Set-Cookie: session=eyJyb2xlIjoiYWRtaW4iLCJzZXNzaW9uX2lkIjoiOTcyMjE1YWQtZTg5Zi00Y2UyLWI4YjEtZjdmNmE4NDg0YzNiIiwidXNlciI6ImFkbWluIn0.anXqUw._U5Knw7eg_RZxfPg3J2Y2M0wvz4; HttpOnly; Path=/·
+Connection: close·
+·
+
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/">/</a>. If not, click the link.
+
+=== JWT (2) ===
+▸ Cookie session
+// header
+{
+  "mfa_user": "admin",
+  "session_id": "972215ad-e89f-4ce2-b8b1-f7f6a8484c3b"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+80d3yFI5_a5FTZIB8tMXSe35m6A
+▸ response Set-Cookie session
+// header
+{
+  "role": "admin",
+  "session_id": "972215ad-e89f-4ce2-b8b1-f7f6a8484c3b",
+  "user": "admin"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+_U5Knw7eg_RZxfPg3J2Y2M0wvz4
+
+=== PARAMS (1) ===
+  code = 5402

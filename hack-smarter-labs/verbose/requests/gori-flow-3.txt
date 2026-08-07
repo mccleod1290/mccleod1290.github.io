@@ -1,0 +1,33 @@
+=== REQUEST (HTTP/1.1) ===
+GET http://10.1.13.210/api/users/all HTTP/1.1·
+Host: 10.1.13.210·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+·
+
+=== RESPONSE ===
+HTTP/1.1 200 OK·
+Server: Werkzeug/3.1.5 Python/3.12.3·
+Date: Fri, 07 Aug 2026 14:23:15 GMT·
+Content-Type: application/json·
+Content-Length: 590·
+Vary: Cookie·
+Set-Cookie: session=eyJzZXNzaW9uX2lkIjoiOWEwYjQxMWItOTU5ZS00ODc2LTg0MDUtMzFjM2Y4NzM3MjBhIn0.anXqUw.sqDbQFAeix5Cn7n58yT4TyaSVvA; HttpOnly; Path=/·
+Connection: close·
+·
+
+[{"email":"tony@hacksmarter.local","id":1,"mfa":null,"password":"basketball","role":"user","username":"tony"},{"email":"johnny@hacksmarter.local","id":2,"mfa":null,"password":"dolphin","role":"user","username":"johnny"},{"email":"admin@hacksmarter.local","id":3,"mfa":"5402","password":"YouWontGetThisPasswordYouNoobLOL123","role":"admin","username":"admin"},{"email":"student@hacksmarter.local","id":4,"mfa":null,"password":"liverpool","role":"user","username":"student"},{"email":"pentester99@test.com","id":5,"mfa":null,"password":"Pentester99!","role":"user","username":"pentester99"}]
+
+=== JWT (1) ===
+▸ response Set-Cookie session
+// header
+{
+  "session_id": "9a0b411b-959e-4876-8405-31c3f873720a"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+sqDbQFAeix5Cn7n58yT4TyaSVvA

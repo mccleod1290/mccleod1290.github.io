@@ -1,0 +1,47 @@
+=== REQUEST (HTTP/1.1) ===
+POST http://10.1.13.210/login HTTP/1.1·
+Host: 10.1.13.210·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Content-Type: application/x-www-form-urlencoded·
+Content-Length: 59·
+·
+
+username=admin&password=YouWontGetThisPasswordYouNoobLOL123
+
+=== RESPONSE ===
+HTTP/1.1 302 FOUND·
+Server: Werkzeug/3.1.5 Python/3.12.3·
+Date: Fri, 07 Aug 2026 14:23:14 GMT·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 195·
+Location: /mfa·
+Vary: Cookie·
+Set-Cookie: session=eyJtZmFfdXNlciI6ImFkbWluIiwic2Vzc2lvbl9pZCI6Ijk3MjIxNWFkLWU4OWYtNGNlMi1iOGIxLWY3ZjZhODQ4NGMzYiJ9.anXqUg.80d3yFI5_a5FTZIB8tMXSe35m6A; HttpOnly; Path=/·
+Connection: close·
+·
+
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/mfa">/mfa</a>. If not, click the link.
+
+=== JWT (1) ===
+▸ response Set-Cookie session
+// header
+{
+  "mfa_user": "admin",
+  "session_id": "972215ad-e89f-4ce2-b8b1-f7f6a8484c3b"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+80d3yFI5_a5FTZIB8tMXSe35m6A
+
+=== PARAMS (2) ===
+  username = admin
+  password = YouWontGetThisPasswordYouNoobLOL123

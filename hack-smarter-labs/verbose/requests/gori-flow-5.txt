@@ -1,0 +1,128 @@
+=== REQUEST (HTTP/1.1) ===
+GET http://10.1.13.210/admin/dashboard HTTP/1.1·
+Host: 10.1.13.210·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Cookie: session=eyJyb2xlIjoiYWRtaW4iLCJzZXNzaW9uX2lkIjoiOTcyMjE1YWQtZTg5Zi00Y2UyLWI4YjEtZjdmNmE4NDg0YzNiIiwidXNlciI6ImFkbWluIn0.anXqUw._U5Knw7eg_RZxfPg3J2Y2M0wvz4·
+·
+
+=== RESPONSE ===
+HTTP/1.1 200 OK·
+Server: Werkzeug/3.1.5 Python/3.12.3·
+Date: Fri, 07 Aug 2026 14:23:16 GMT·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 5850·
+Vary: Cookie·
+Connection: close·
+·
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hack Smarter Portal</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; }
+        .nav { background: #1e293b; padding: 1rem; display: flex; gap: 20px; border-bottom: 2px solid #38bdf8; align-items: center; }
+        .container { padding: 2rem; max-width: 900px; margin: auto; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); margin-bottom: 20px; border: 1px solid #334155; }
+        input, textarea { width: 95%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #334155; background: #020617; color: white; }
+        input:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px dashed #475569; }
+        button, .btn { background: #38bdf8; color: #0f172a; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; display: inline-block; text-align: center; text-decoration: none;}
+        .action-btn { display: inline-block; background: #334155; padding: 10px 20px; border-radius: 6px; color: white; text-decoration: none; margin-right: 10px; border: 1px solid #475569; }
+        .error { color: #fca5a5; background: #450a0a; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #7f1d1d; }
+        .success { color: #86efac; background: #064e3b; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #065f46; }
+        .msg-box { border-left: 4px solid #38bdf8; background: #0f172a; padding: 15px; margin: 10px 0; border-radius: 0 6px 6px 0; }
+        h1, h2, h3 { color: #f8fafc; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: #38bdf8; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; }
+        td { color: #cbd5e1; }
+        tr:hover { background: #334155; }
+        .badge { background: #38bdf8; color: #0f172a; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-admin { background: #facc15; }
+        pre { background: #020617; padding: 10px; border-radius: 6px; overflow-x: auto; color: #a3e635; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <strong style="color: #38bdf8; font-size: 1.2rem;">Hack Smarter Portal</strong>
+        <a href="/" style="color: white; text-decoration: none;">Dashboard</a>
+        
+            <a href="/messages" style="color: white; text-decoration: none;">Messages</a>
+            <a href="/profile" style="color: white; text-decoration: none;">Profile</a>
+            
+                <a href="/admin/dashboard" style="color: #facc15; text-decoration: none; font-weight: bold;">Admin Panel</a>
+            
+            <a href="/logout" style="color: white; text-decoration: none;">Logout</a>
+        
+    </div>
+    <div class="container">
+        
+          
+        
+
+    <div class="card">
+        <h2 style="color: #facc15;">Admin Dashboard HSM{a4c1520cec85}</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="background: #334155; padding: 15px; border-radius: 6px; border: 1px solid #475569;">
+                <h3 style="margin-top:0;">Site Branding</h3>
+                <p>Upload a new logo (PNG only).</p>
+                <form action="/admin/upload_logo" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="file">
+                    <button type="submit" class="action-btn" style="background: #38bdf8; border:none; color: #0f172a; width: auto; margin-top: 10px;">Upload</button>
+                </form>
+                <br>
+                <a href="/admin/logo_preview?file=logo.png" target="_blank" style="color: #facc15;">[Preview Current Logo]</a>
+            </div>
+
+            <div style="background: #334155; padding: 15px; border-radius: 6px; border: 1px solid #475569;">
+                <h3 style="margin-top:0;">Server Status</h3>
+                <p>Run a connectivity check on the local system.</p>
+                <form action="/admin/health_check" method="POST">
+                    <input type="hidden" name="target" value="127.0.0.1">
+                    <button type="submit" class="action-btn" style="background: #22c55e; border:none; color: white; width: auto; margin-top: 10px;">Check Health</button>
+                </form>
+            </div>
+        </div>
+
+        <p>System User Directory (Loaded via API)</p>
+        <table id="userTable">
+            <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Email</th></tr></thead>
+            <tbody><tr><td colspan="4" style="text-align:center;">Loading data...</td></tr></tbody>
+        </table>
+        <hr style="border-color: #334155; margin: 20px 0;">
+        <h3>Promote User</h3>
+        <form action="/admin/make_admin" method="POST">
+            <input name="username" placeholder="Username">
+            <input type="hidden" name="csrf_token" value="valid_token_123">
+            <button type="submit">Promote to Admin</button>
+        </form>
+    </div>
+    <script>
+        fetch('/api/users/all').then(r => r.json()).then(d => {
+            const t = document.querySelector('#userTable tbody'); t.innerHTML = '';
+            d.forEach(u => {
+                const b = u.role === 'admin' ? '<span class="badge badge-admin">ADMIN</span>' : '<span class="badge">USER</span>';
+                t.innerHTML += `<tr><td>${u.id}</td><td><strong>${u.username}</strong></td><td>${b}</td><td>${u.email}</td></tr>`;
+            });
+        });
+    </script>
+    </div></body></html>
+
+=== JWT (1) ===
+▸ Cookie session
+// header
+{
+  "role": "admin",
+  "session_id": "972215ad-e89f-4ce2-b8b1-f7f6a8484c3b",
+  "user": "admin"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+_U5Knw7eg_RZxfPg3J2Y2M0wvz4
