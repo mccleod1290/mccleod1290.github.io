@@ -1,0 +1,21 @@
+=== REQUEST (HTTP/1.1) ===
+GET http://10.0.31.37:3000/incident-response HTTP/1.1·
+Host: 10.0.31.37:3000·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Cookie: user=pentester·
+·
+
+=== RESPONSE ===
+HTTP/1.1 403 Forbidden·
+X-Powered-By: Express·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 22·
+ETag: W/"16-mAKVOJmd9ugdEPt306TADGVRlos"·
+Date: Fri, 07 Aug 2026 14:08:24 GMT·
+Connection: keep-alive·
+Keep-Alive: timeout=5·
+·
+
+<h1>403 Forbidden</h1>

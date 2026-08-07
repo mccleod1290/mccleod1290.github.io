@@ -1,0 +1,7 @@
+#7     GET    http  http://10.0.31.37:3000/incident-response  -> 200  487B 469.8ms
+#6     GET    http  http://10.0.31.37:3000/incident-response  -> 403  429B 462.9ms
+#5     POST   http  http://10.0.31.37:3000/api/mail/send  -> 200  555B 464.9ms
+#4     GET    http  http://10.0.31.37:3000/api/mail  -> 200  470B 468.6ms
+#3     GET    http  http://10.0.31.37:3000/dashboard  -> 200  6.4kB 477.9ms
+#2     POST   http  http://10.0.31.37:3000/login  -> 302  542B 464.9ms
+#1     GET    http  http://10.0.31.37:3000/  -> 200  1.3kB 467.8ms

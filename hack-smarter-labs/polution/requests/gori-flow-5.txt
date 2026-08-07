@@ -1,0 +1,25 @@
+=== REQUEST (HTTP/1.1) ===
+POST http://10.0.31.37:3000/api/mail/send HTTP/1.1·
+Host: 10.0.31.37:3000·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Cookie: user=pentester·
+Content-Type: application/json·
+Content-Length: 82·
+·
+
+{"to":"admin@hacksmarter.local","subject":"gori demo","body":"proxy capture test"}
+
+=== RESPONSE ===
+HTTP/1.1 200 OK·
+X-Powered-By: Express·
+Content-Type: application/json; charset=utf-8·
+Content-Length: 17·
+ETag: W/"11-LfGeAEv7fGIMzF4ZyARfM8ujODc"·
+Date: Fri, 07 Aug 2026 14:08:23 GMT·
+Connection: keep-alive·
+Keep-Alive: timeout=5·
+·
+
+{"status":"Sent"}
