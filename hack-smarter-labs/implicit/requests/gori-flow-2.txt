@@ -1,0 +1,46 @@
+=== REQUEST (HTTP/1.1) ===
+POST http://10.0.31.90/sso/register HTTP/1.1·
+Host: 10.0.31.90·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Content-Type: application/x-www-form-urlencoded·
+Content-Length: 41·
+·
+
+username=goriuser1&password=Pentester123!
+
+=== RESPONSE ===
+HTTP/1.1 302 FOUND·
+Server: Werkzeug/3.0.1 Python/3.10.19·
+Date: Fri, 07 Aug 2026 14:53:45 GMT·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 209·
+Location: /oauth/auth·
+Vary: Cookie·
+Set-Cookie: session=eyJzc29fdXNlciI6Imdvcml1c2VyMSJ9.anXxeQ.5uvlyygMqS9YdppW9fo6YKspS0o; HttpOnly; Path=/·
+Connection: close·
+·
+
+<!doctype html>
+<html lang=en>
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to the target URL: <a href="/oauth/auth">/oauth/auth</a>. If not, click the link.
+
+=== JWT (1) ===
+▸ response Set-Cookie session
+// header
+{
+  "sso_user": "goriuser1"
+}
+
+// payload
+(undecodable segment)
+
+// signature (not verified)
+5uvlyygMqS9YdppW9fo6YKspS0o
+
+=== PARAMS (2) ===
+  username = goriuser1
+  password = Pentester123!

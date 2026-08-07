@@ -1,0 +1,8 @@
+# After CI deploy of fixed app.py:
+POST /api/login HTTP/1.1
+Content-Type: application/json
+
+{"access_token":"<valid_token_for_low_user>","username":"administrator"}
+
+HTTP/1.1 401
+{"success": false, "message": "Token subject mismatch. Username does not match the access token."}

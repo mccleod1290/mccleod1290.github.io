@@ -1,0 +1,6 @@
+POST /oauth/approve HTTP/1.1
+Host: 10.0.31.90
+Cookie: session=<sso_session_after_register>
+
+HTTP/1.1 302 FOUND
+Location: /#access_token=1e44ce9ddfd34e0691ebfdbe9d8c5aca&username=pent2895

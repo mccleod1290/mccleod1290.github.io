@@ -1,0 +1,42 @@
+=== REQUEST (HTTP/1.1) ===
+GET http://10.0.31.90/ HTTP/1.1·
+Host: 10.0.31.90·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+·
+
+=== RESPONSE ===
+HTTP/1.1 200 OK·
+Server: Werkzeug/3.0.1 Python/3.10.19·
+Date: Fri, 07 Aug 2026 14:53:44 GMT·
+Content-Type: text/html; charset=utf-8·
+Content-Length: 878·
+Connection: close·
+·
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Hack Smarter</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="brand-logo">Hack<span>Smarter</span></div>
+        <h2>Sign in to access your courses and labs</h2>
+        
+        <div id="error-container" class="error-message hidden"></div>
+        
+        <p style="font-size: 14px; color: #94a3b8; margin-bottom: 24px;">
+            We have migrated to a new centralized authentication system. Please use the Hack Smarter Identity Provider to access your account.
+        </p>
+        
+        <a href="/oauth/auth" class="btn">Continue with HackSmarter ID</a>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>

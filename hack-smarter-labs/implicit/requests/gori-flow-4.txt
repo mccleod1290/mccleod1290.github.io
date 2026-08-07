@@ -1,0 +1,25 @@
+=== REQUEST (HTTP/1.1) ===
+POST http://10.0.31.90/api/login HTTP/1.1·
+Host: 10.0.31.90·
+User-Agent: curl/8.20.0·
+Accept: */*·
+Proxy-Connection: Keep-Alive·
+Content-Type: application/json·
+Content-Length: 78·
+·
+
+{"access_token":"cb75ed8f63dc43b68fc50340d1613349","username":"administrator"}
+
+=== RESPONSE ===
+HTTP/1.1 401 UNAUTHORIZED·
+Server: Werkzeug/3.0.1 Python/3.10.19·
+Date: Fri, 07 Aug 2026 14:53:46 GMT·
+Content-Type: application/json·
+Content-Length: 105·
+Connection: close·
+·
+
+{
+  "message": "Token subject mismatch. Username does not match the access token.",
+  "success": false
+}
